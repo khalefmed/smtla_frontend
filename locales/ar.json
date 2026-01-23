@@ -1,0 +1,122 @@
+{
+  "Acceuil": "الرئيسية",
+  "Etablissements": "المؤسسات",
+  "Salariés": "الموظفون",
+  "Utilisateurs" : "المستخدمين",
+  "Chèques" : "الشيكات",
+  "Banques" : "البنوك",
+
+  "Bienvenue": "أهلاً بكم!",
+  "Connexion text": "هذه المنصة هي منصة تم إنشاؤها بواسطة الخزانة لإدارة كروت المرتبات للموظفين العاملين في المؤسسات الشريكة مع الخزانة.",
+  "Connexion": "تسجيل الدخول",
+  "Nom utilisateur": "اسم المستخدم",
+  "Mot de passe": "كلمة المرور",
+
+  "Mon profil" : "معلوماتي",
+  "Deconnexion" : "تسجيل الخروج",
+
+  "Code": "الرمز",
+  "Nom": "الاسم",
+  "Action": "إجراء",
+  "Modifier": "تعديل",
+  "Supprimer": "حذف",
+
+  "Etats" : "حالات الرواتب",
+
+  "Moyenne des salaires": "متوسط الرواتب",
+  "Nombre de salariés": "عدد الموظفين",
+  "Total des etablissements": "إجمالي المؤسسات",
+  "MRU": "أوقية",
+  "Rechercher": "البحث ...",
+  "Nouveau": "جديد",
+
+  "Total des banques" : "مجموع البنوك",
+  "Nombre de comptes" : "عدد الحسابات",
+  "Comptes" : "حساب",
+
+  "Nombre total des agents": "العدد الإجمالي للوكلاء",
+  "Total des cheques" : "العدد الإجمالي للشيكات",
+  "Nombre d'agent trésor": "عدد وكلاء الخزينة",
+  "Agents": "وكيل",
+  "Nombre d'agent etablissement": "عدد وكلاء المؤسسة",
+
+  "Numero" : "الرقم",
+  "Montant" : "المبلغ",
+
+
+  "Nom Complet": "الاسم الكامل",
+  "NNI": "الرقم الوطني",
+  "Salaire": "الراتب",
+  "Banque": "البنك",
+  "N Compte": "رقم الحساب",
+
+
+  "Modifier la banque": "تعديل البنك",
+  "Veuillez remplir les champs suivant  pour modifier la banque": "يرجى ملء الحقول التالية لتعديل البنك",
+  "Entrez le code de la banque": "أدخل رمز البنك",
+  "Entrez le nom de la banque": "أدخل اسم البنك",
+  "Modifier le chèque": "تعديل الشيك",
+  "Veuillez remplir les champs suivant  pour modifier le chèque": "يرجى ملء الحقول التالية لتعديل الشيك",
+  "Entrez le numero du cheque": "أدخل رقم الشيك",
+  "Modifier l'établissement": "تعديل المؤسسة",
+  "Veuillez remplir les champs suivant  pour modifier l'établissement": "يرجى ملء الحقول التالية لتعديل المؤسسة",
+  "Entrez le code de l'entreprise": "أدخل رمز الشركة",
+  "Entrez le nom de l'entreprise": "أدخل اسم الشركة",
+  "Modifier l'entreprise": "تعديل الشركة",
+
+  "Modifier l'utilisateur": "تعديل المستخدم",
+  "Veuillez remplir les champs suivant  pour modifier l'utilisateur": "يرجى ملء الحقول التالية لتعديل المستخدم",
+  "Entrez le nom": "أدخل الاسم",
+  "Entrez le numero national": "أدخل الرقم الوطني",
+  "Etablissement": "المؤسسة",
+  "Numero de compte": "رقم الحساب",
+  "Entrez le numero de compte": "أدخل رقم الحساب",
+  "Entrez le salaire": "أدخل الراتب",
+  "Modifier le salarie": "تعديل الراتب",
+
+  "Veuillez remplir les champs suivant pour modifier le salarié": "يرجى ملء الحقول التالية لتعديل الموظف",
+
+  "Nouveau chèque": "شيك جديد",
+  "Creer page cheque": "يرجى ملء الحقول التالية لإنشاء شيك جديد",
+  "Créer le chèque": "إنشاء الشيك",
+
+  "Créer le salarie" : "إنشاء الموظف",
+  "Nouveau salarié" : "موظف جديد",
+
+  "Nouveau utilisateur": "مستخدم جديد",
+  "Creer page utilisateur": "إنشاء صفحة مستخدم",
+  "Prenom": "الاسم الأول",
+  "Entrez le prenom": "أدخل الاسم الأول",
+  "Nom d'utilisateur": "اسم المستخدم",
+  "Entrez le nom de l'utilisateur": "أدخل اسم المستخدم",
+  "Telephone": "الهاتف",
+  "Entrez le numero de telephone": "أدخل رقم الهاتف",
+  "Créer l'utilisateur": "إنشاء المستخدم",
+
+  "Nouvelle banque": "بنك جديد",
+  "Veuillez remplir les champs suivant pour créer une nouvelle banque": "يرجى ملء الحقول التالية لإنشاء بنك جديد",
+  "Créer la banque": "إنشاء البنك",
+
+  "Nouveau établissement": "مؤسسة جديدة",
+  "Veuillez remplir les champs suivant pour créer un nouveau établissement": "يرجى ملء الحقول التالية لإنشاء مؤسسة جديدة",
+  "Créer l'entreprise": "إنشاء المؤسسة",
+
+  "Veuillez remplir les champs suivant pour créer un nouveau utilisateur": "يرجى ملء الحقول التالية لإنشاء مستخدم جديد",
+  "Veuillez remplir les champs suivant pour créer un nouveau salarié": "يرجى ملء الحقول التالية لإنشاء موظف جديد",
+
+  "Entrez le nom du chèque": "أدخل اسم الشيك",
+  "Identifiant" : "معرف",
+
+  "Veuillez remplir les champs suivant pour modifier vos informations personnelles" : "يرجى ملء الحقول التالية لتعديل معلوماتكم ",
+  "Modification des informations" : "تعديل المعلومات",
+
+  "Montants" : "المبالغ",
+  "Les etats de salaires dans les 3 derniers mois" : "حالات الرواتب في الأشهر الثلاث الماضية"
+
+
+
+
+
+
+
+}

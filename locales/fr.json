@@ -1,0 +1,47 @@
+{
+  "Acceuil" : "Acceuil",
+  "Etablissements" : "Etablissements",
+  "Salariés" : "Salariés",
+  "Utilisateurs" : "Utilisateurs",
+  "Chèques" : "Chèques",
+  "Banques" : "Banques",
+
+  "Bienvenue" : "Bienvenue !",
+  "Connexion text" : "Cette application a été conçue pour la SMTLA dans le but de moderniser et centraliser la gestion de ses activités de transit, de logistique et de transport terrestre et aérien, en améliorant l’efficacité opérationnelle",
+  "Connexion" : "Connexion",
+  "Nom utilisateur" : "Nom d'utilisateur",
+  "Mot de passe" : "Mot de passe",
+
+  "Mon profil" : "Mon profil",
+  "Deconnexion" : "Deconnexion",
+
+  "Code" : "Code",
+  "Nom" : "Nom",
+  "Action" : "Action",
+  "Modifier" : "Modifier",
+  "Supprimer" : "Supprimer",
+
+  "Moyenne des salaires" : "Moyenne des salaires",
+  "Nombre de salariés" : "Nombre de salairés",
+  "Total des etablissements" : "Total des établissements",
+  "MRU" : "MRU",
+  "Rechercher" : "Rechercher ...",
+  "Nouveau" : "Nouveau",
+
+  "Total des banques" : "Total des banques",
+  "Nombre de comptes" : "Nombre de comptes",
+  "Comptes" : "Comptes",
+
+  "Nombre total des agents": "Nombre total des agents",
+  "Total des cheques" : "Total des chèques",
+  "Nombre d'agent trésor": "Nombre d'agent trésor",
+  "Agents": "Agents",
+  "Nombre d'agent etablissement": "Nombre d'agent établissement",
+
+  "Prenom": "Prenom",
+  "Entrez prenom": "Entrez le prenom",
+  "Entrez nom": "Entrez le nom",
+  "Nom d'utilisateur": "Nom d'utilisateur"
+  
+
+}
