@@ -19,7 +19,7 @@ export const MotDePasse = () => {
             
             try {
                 const response = await api.put(
-                    `modifier_mot_de_passe/`,
+                    `modifier-mot-de-passe/`,
                   {
                       "ancien" : ancien,
                       "nouveau" : nouveau ,
