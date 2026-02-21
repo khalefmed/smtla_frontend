@@ -1,132 +1,160 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import logo from '@/assets/logo.png';
+import signatureDG from '@/assets/signatures/directeur_general.png';
+import signatureComptable from '@/assets/signatures/comptable.png';
 
 export function generateNoteFraisPdf(note) {
-  const doc = new jsPDF('l', 'mm', 'a4'); 
+  const doc = new jsPDF('p', 'mm', 'a4');
   const pageWidth = doc.internal.pageSize.getWidth();
   
   const orangeFill = [248, 192, 80];
   const lightBlueFill = [222, 235, 247];
   const blackText = [0, 0, 0];
 
-  // --- 1. CALCULS DE SÉCURITÉ (Évite le 0 MRU) ---
-  const sommeItems = note.items.reduce((acc, curr) => acc + Number(curr.montant || 0), 0);
-  const tvaFacteur = note.tva ? 0.16 : 0;
+  // --- 1. CALCULS (Utilisation des champs du Serializer) ---
+  const sommeItems = note.items?.reduce((acc, curr) => acc + Number(curr.montant || 0), 0) || 0;
+  const tvaFacteur = note.tva ? 0.16 : 0; // note.tva vient de expression_besoin.tva via le serializer
   const montantHT = sommeItems;
   const montantTVA = sommeItems * tvaFacteur;
   const montantTTC = montantHT + montantTVA;
 
-  const dateObj = note.date_creation ? new Date(note.date_creation) : new Date();
-  const dateFormatted = isNaN(dateObj.getTime()) ? new Date().toLocaleDateString() : dateObj.toLocaleDateString();
+  const dateFormatted = note.date_creation ? new Date(note.date_creation).toLocaleDateString('fr-FR') : new Date().toLocaleDateString('fr-FR');
+  const etaFormatted = note.eta ? new Date(note.eta).toLocaleString('fr-FR') : '-';
 
-  // --- 2. LOGO ET EN-TÊTE ---
+  // --- 2. EN-TÊTE ---
   try {
-    doc.addImage(logo, 'PNG', 14, 10, 50, 25);
+    doc.addImage(logo, 'PNG', 14, 10, 40, 20);
   } catch (e) { console.warn("Logo manquant"); }
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(16);
-  doc.text('NOTE DE DEPENSE', 160, 20);
+  doc.text('NOTE DE FRAIS', pageWidth / 2, 20, { align: 'center' });
   
-  // AJOUT D'ESPACE : On descend la référence de quelques mm (y=28 au lieu de 20)
-  doc.setFontSize(12);
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text(note.reference || '', 220, 20); 
+  doc.text(`Réf: ${note.reference || ''}`, pageWidth - 14, 25, { align: 'right' }); 
+  
+  // Référence de l'EB source juste en dessous
+  doc.setFontSize(8);
+  doc.text(`EB Source: ${note.expression_besoin_reference || 'N/A'}`, pageWidth - 14, 30, { align: 'right' });
 
-  // --- 3. BLOC INFOS ---
+  // --- 3. BLOCS INFOS (SYSTÈME MIROIR) ---
+  const startYInfos = 35;
+
+  // Tableau GAUCHE : Origine
   autoTable(doc, {
-    startY: 25,
-    margin: { left: 180 },
+    startY: startYInfos,
+    margin: { right: 110 },
     body: [
-      ['Date', dateFormatted],
-      ['Nom&Prénom', note.user_name || 'Moustapha Seydina Ali'],
-      ['Direction', 'Opération'],
-      ['Affectation', 'Bureau siège']
+      ['Date Note', dateFormatted],
+      ['Demandeur', note.createur_nom || 'Non précisé'], // Utilise le créateur de la note
+      ['Statut', note.status_display || 'En attente'],
+      ['Référence EB', note.expression_besoin_reference || '-']
     ],
     theme: 'grid',
-    styles: { fontSize: 9, cellPadding: 1.5, textColor: blackText, lineColor: [150, 0, 0] },
-    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 35 } }
+    styles: { fontSize: 8, cellPadding: 1.2 },
+    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 30, fillColor: [245, 245, 245] } }
+  });
+
+  // Tableau DROITE : Logistique (Champs directs du serializer)
+  autoTable(doc, {
+    startY: startYInfos,
+    margin: { left: 110 },
+    body: [
+      ['BL / AWB', note.bl_awb || '-'],
+      ['Navire', note.navire || '-'],
+      ['ETA', etaFormatted],
+      ['Client', note.client_beneficiaire_nom || '-']
+    ],
+    theme: 'grid',
+    styles: { fontSize: 8, cellPadding: 1.2 },
+    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 30, fillColor: [245, 245, 245] } }
   });
 
   // --- 4. TABLEAU DES ITEMS ---
-  const categories = [
-    { id: 'nourriture', label: 'Nourriture' },
-    { id: 'hebergement', label: 'Hebergement' },
-    { id: 'medicament', label: 'Medicament' },
-    { id: 'carburant', label: 'carburant' },
-    { id: 'entretien', label: 'Entretien' },
-    { id: 'telecom', label: 'Telecom' },
-    { id: 'avance', label: 'Avance' },
-    { id: 'divers', label: 'Divers' }
-  ];
+  const tableHead = [['Désignation', 'Type', 'Montant']];
+  const tableBody = note.items?.map(item => [
+    item.libelle || '',
+    item.type ? item.type.charAt(0).toUpperCase() + item.type.slice(1) : 'Equipement',
+    `${Number(item.montant).toLocaleString()} ${note.devise || 'MRU'}`
+  ]) || [];
 
-  const head = [['Désignation', ...categories.map(c => c.label)]];
-  const tableBody = note.items.map(item => {
-    const row = new Array(9).fill(''); 
-    row[0] = item.libelle || '';
-    const catIndex = categories.findIndex(c => c.id === item.type);
-    if (catIndex !== -1) row[catIndex + 1] = Number(item.montant).toFixed(2);
-    return row;
-  });
-
-  const totalRow = new Array(9).fill('-');
-  totalRow[0] = 'TOTAL';
-  categories.forEach((cat, idx) => {
-    const sum = note.items
-      .filter(i => i.type === cat.id)
-      .reduce((acc, curr) => acc + Number(curr.montant || 0), 0);
-    totalRow[idx + 1] = sum > 0 ? sum.toLocaleString() : '-';
-  });
+  tableBody.push([
+    { content: 'TOTAL NOTE', colSpan: 2, styles: { halign: 'right', fontStyle: 'bold', fillColor: orangeFill } },
+    { content: `${montantHT.toLocaleString()} ${note.devise || 'MRU'}`, styles: { fontStyle: 'bold', fillColor: orangeFill } }
+  ]);
 
   autoTable(doc, {
-    startY: 65,
-    head: head,
-    body: [...tableBody, totalRow],
+    startY: doc.lastAutoTable.finalY + 10,
+    head: tableHead,
+    body: tableBody,
     theme: 'grid',
-    styles: { fontSize: 8, halign: 'center', lineColor: [0, 0, 0], lineWidth: 0.1 },
+    styles: { fontSize: 9, cellPadding: 3 },
     headStyles: { fillColor: orangeFill, textColor: blackText, fontStyle: 'bold' },
-    bodyStyles: { fillColor: lightBlueFill },
-    columnStyles: { 0: { halign: 'left', cellWidth: 70, fontStyle: 'bold' } },
-    didParseCell: function(data) {
-      if (data.row.index === tableBody.length) {
-        data.cell.styles.fillColor = orangeFill;
-        data.cell.styles.fontStyle = 'bold';
-      }
+    columnStyles: {
+      0: { cellWidth: 'auto' },
+      1: { cellWidth: 40, halign: 'center' },
+      2: { cellWidth: 40, halign: 'right' }
     }
   });
 
-  let finalY = doc.lastAutoTable.finalY;
-
-  // --- 5. CALCULS RÉELS (Évite le NaN/0) ---
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  doc.text(`TOTAL : ${montantHT.toLocaleString()} MRU`, pageWidth - 14, finalY + 5, { align: 'right' });
-
+  // --- 5. RÉCAPITULATIF FINANCIER (6 colonnes) ---
   autoTable(doc, {
-    startY: finalY + 10,
-    margin: { left: 80 },
+    startY: doc.lastAutoTable.finalY + 10,
     body: [
-      ['RATE OF BCM', '', '', '', 'MONTANT HT/MRU', `${montantHT.toLocaleString()} MRU`],
-      ['1000 XOF', '1 USD', '1 EURO', 'MRU', 'TVA 16%', `${montantTVA > 0 ? montantTVA.toLocaleString() : '-'} MRU`],
-      ['', '', '', '1', 'MONTANT TTC', `${montantTTC.toLocaleString()} MRU`]
+      ['RATE OF BCM', '', '', '', 'MONTANT HT', `${montantHT.toLocaleString()} ${note.devise || 'MRU'}`],
+      ['1000 XOF', '1 USD', '1 EURO', 'MRU', 'TVA 16%', `${montantTVA > 0 ? montantTVA.toLocaleString() : '-'} ${note.devise || 'MRU'}`],
+      [
+        note.devise === 'XOF' ? '1' : '', 
+        note.devise === 'DOLLAR' ? '1' : '', // 'DOLLAR' selon votre modèle Django
+        note.devise === 'EUR' ? '1' : '', 
+        '1', 
+        'MONTANT TTC', 
+        `${montantTTC.toLocaleString()} ${note.devise || 'MRU'}`
+      ]
     ],
     theme: 'grid',
-    styles: { fontSize: 8, cellPadding: 1, textColor: blackText },
-    didParseCell: function(data) {
-      if (data.column.index >= 4) data.cell.styles.fillColor = [240, 240, 240];
+    styles: { fontSize: 8, cellPadding: 1.5 },
+    columnStyles: {
+      4: { fontStyle: 'bold', fillColor: [240, 240, 240], cellWidth: 35 },
+      5: { halign: 'right', fontStyle: 'bold', cellWidth: 40 }
     }
   });
 
   // --- 6. SIGNATURES ---
   autoTable(doc, {
-    startY: doc.internal.pageSize.getHeight() - 60,
-    head: [['DG', 'FINANCE', 'BENEFICIAIRE']],
+    startY: doc.internal.pageSize.getHeight() - 70, 
+    head: [['DIRECTEUR GÉNÉRAL', 'FINANCE / COMPTABILITÉ', 'BÉNÉFICIAIRE']],
     body: [['', '', '']], 
     theme: 'grid',
-    styles: { minCellHeight: 20, halign: 'center', fontSize: 10, fontStyle: 'bold' },
-    headStyles: { fillColor: [255, 255, 255], textColor: blackText, lineWidth: 0.2 }
+    styles: { 
+      minCellHeight: 30, 
+      halign: 'center', 
+      valign: 'middle',
+      fontSize: 9, 
+      fontStyle: 'bold' 
+    },
+    headStyles: { 
+      fillColor: [245, 245, 245], 
+      minCellHeight: 8 
+    },
+    didDrawCell: (data) => {
+      if (note.status === 'valide' && data.section === 'body') {
+        const imgSize = 25;
+        const posX = data.cell.x + (data.cell.width / 2) - (imgSize / 2);
+        const posY = data.cell.y + (data.cell.height / 2) - (imgSize / 2);
+
+        try {
+          if (data.column.index === 0) {
+            doc.addImage(signatureDG, 'PNG', posX, posY, imgSize, imgSize);
+          } else if (data.column.index === 1) {
+            doc.addImage(signatureComptable, 'PNG', posX, posY, imgSize, imgSize);
+          }
+        } catch (e) { /* Signature absente */ }
+      }
+    }
   });
 
-  doc.save(`Note_Frais_${note.reference || 'export'}.pdf`);
+  doc.save(`NoteFrais_${note.reference}.pdf`);
 }

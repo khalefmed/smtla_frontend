@@ -114,7 +114,7 @@ function Clients() {
             placeholder={t("Rechercher par nom, téléphone, email ou NIF...")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 bg-inputFieldColor rounded-lg outline-none border border-transparent focus:border-indigo-500"
+            className="w-full pl-10 pr-4 py-3 bg-inputFieldColor rounded-lg outline-none border border-transparent focus:border-buttonGradientPrimary"
           />
         </div>
       </div>

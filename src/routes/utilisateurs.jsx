@@ -334,7 +334,7 @@ function GestionUtilisateurs() {
                               key={role}
                               className={`px-2 py-1 text-xs rounded-full ${
                                 role === 'admin'
-                                  ? 'bg-purple-100 text-purple-700'
+                                  ? 'bg-inputFieldColor text-purple-700'
                                   : role === 'validation'
                                   ? 'bg-green-100 text-green-700'
                                   : role === 'archivage'

@@ -88,7 +88,7 @@ export default function Acceuil() {
           title="Total étudiants"
           value={stats?.total_etudiants}
           icon={<Users className="w-5 h-5" />}
-          color="text-purple-600"
+          color="text-buttonGradientSecondary"
         />
 
         <StatCard
@@ -158,7 +158,7 @@ export default function Acceuil() {
             </div>
             <div className="flex justify-between pt-3 border-t">
               <span className="text-gray-600">Nouveaux étudiants</span>
-              <span className="font-bold text-purple-600">
+              <span className="font-bold text-buttonGradientSecondary">
                 +{stats?.nouveaux_etudiants_ce_mois}
               </span>
             </div>

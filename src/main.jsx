@@ -26,12 +26,16 @@ import GestionUtilisateurs from "./routes/utilisateurs";
 import GestionGroupes from "./routes/groupes";
 import GestionTypes from "./routes/types";
 import GestionUtilisateursSuperAdmin from "./routes/utilisateurs-admin";
-import Produits from "./routes/produits";
 import Clients from "./routes/clients";
 import NotesDeFrais from "./routes/note_frais";
 import Devis from "./routes/devis";
 import Factures from "./routes/factures";
 import Dashboard from "./routes/dashboard";
+import ExpressionsBesoin from "./routes/ExpressionsBesoin";
+import Fournisseurs from "./routes/fournisseurs";
+import BonsCommande from "./routes/bon_commande";
+import Rotations from "./routes/rotations";
+import { BAD } from "./routes/bad";
 
 
 
@@ -49,8 +53,8 @@ const router = createBrowserRouter([
         element: <ProtectedRoute component={Transactions} />,
       },
       {
-        path: "/produits",
-        element: <ProtectedRoute component={Produits} />,
+        path: "/rotations",
+        element: <ProtectedRoute component={Rotations} />,
       },
       {
         path: "/clients",
@@ -61,6 +65,10 @@ const router = createBrowserRouter([
         element: <ProtectedRoute component={NotesDeFrais} />,
       },
       {
+        path: "/expression_besoin",
+        element: <ProtectedRoute component={ExpressionsBesoin} />,
+      },
+      {
         path: "/devis",
         element: <ProtectedRoute component={Devis} />,
       },
@@ -69,8 +77,8 @@ const router = createBrowserRouter([
         element: <ProtectedRoute component={Factures} />,
       },
       {
-        path: "/dossiers",
-        element: <ProtectedRoute component={Dossiers} />,
+        path: "/bad",
+        element: <ProtectedRoute component={BAD} />,
       },
       {
         path: "/groupes",
@@ -79,6 +87,14 @@ const router = createBrowserRouter([
       {
         path: "/types",
         element: <ProtectedRoute component={GestionTypes} />,
+      },
+      {
+        path: "/fournisseurs",
+        element: <ProtectedRoute component={Fournisseurs} />,
+      },
+      {
+        path: "/bon_de_commande",
+        element: <ProtectedRoute component={BonsCommande} />,
       },
       {
         path: "/archives",

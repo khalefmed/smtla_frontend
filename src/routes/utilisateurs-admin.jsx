@@ -417,7 +417,7 @@ function GestionUtilisateursSuperAdmin() {
                                   <span
                                     key={role}
                                     className={`px-2 py-0.5 text-xs rounded-full ${
-                                      getRoleColor(role) === 'purple' ? 'bg-purple-100 text-purple-700' :
+                                      getRoleColor(role) === 'purple' ? 'bg-inputFieldColor text-purple-700' :
                                       getRoleColor(role) === 'green' ? 'bg-green-100 text-green-700' :
                                       getRoleColor(role) === 'orange' ? 'bg-orange-100 text-orange-700' :
                                       'bg-blue-100 text-buttonGradientSecondary'

@@ -1,8 +1,12 @@
 // Installation requise: npm install jspdf jspdf-autotable
-
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import logo from '@/assets/logo.png';
+
+// Import des signatures/cachets
+import sigDG from '@/assets/signatures/directeur_general.png';
+import sigDO from '@/assets/signatures/directeur_operations.png';
+import sigComptable from '@/assets/signatures/comptable.png';
 
 // Fonction de conversion de nombre en lettres françaises
 const numberToFrenchWords = (num) => {
@@ -47,42 +51,26 @@ const numberToFrenchWords = (num) => {
   return words.charAt(0).toUpperCase() + words.slice(1);
 };
 
-export const generateFacturePDF = async (facture, client) => {
+export const generateDevisPDF = async (facture, client) => {
   const doc = new jsPDF();
   
   // Couleurs personnalisées
-  const blueHeader = [15, 117, 188]; // Bleu pour les en-têtes
-  const lightBlue = [15, 117, 188]; // Bleu clair pour les lignes
+  const blueHeader = [15, 117, 188]; 
+  const lightBlue = [15, 117, 188]; 
   
   let yPos = 15;
   
-// ============== EN-TÊTE ==============
+  // ============== EN-TÊTE ==============
+  const logoWidth = 30;
+  const logoHeight = 15;
 
-// Dimensions du logo
-const logoWidth = 30;
-const logoHeight = 15;
+  doc.addImage(logo, 'PNG', 14, yPos - 10, logoWidth, logoHeight);
 
-// Ajouter le logo (PNG ou JPG)
-doc.addImage(
-  logo,
-  'PNG',
-  14,          // X (gauche)
-  yPos - 10,   // Y (aligné verticalement)
-  logoWidth,
-  logoHeight
-);
-
-// Titre DEVIS (sur la même ligne)
-doc.setFontSize(20);
-doc.setTextColor(...lightBlue);
-doc.setFont('helvetica', 'bold');
-doc.text(
-  'DEVIS',
-  14 + logoWidth + 100, // à droite du logo
-  yPos
-);
+  doc.setFontSize(20);
+  doc.setTextColor(...lightBlue);
+  doc.setFont('helvetica', 'bold');
+  doc.text('DEVIS', 144, yPos);
   
-  // Informations de l'entreprise
   yPos += 14;
   doc.setFontSize(11);
   doc.setTextColor(0, 0, 0);
@@ -94,16 +82,17 @@ doc.text(
   doc.setFont('helvetica', 'normal');
   doc.text('NIF : 01328566', 14, yPos);
   
-  // Cadre N° DEVIS et DATE
   yPos += 2;
   doc.setFillColor(...lightBlue);
   doc.rect(140, yPos, 55, 8, 'F');
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
+  doc.setTextColor(255, 255, 255);
   doc.text('N° DEVIS', 142, yPos + 5);
   doc.text('DATE', 175, yPos + 5);
   
   yPos += 10;
+  doc.setTextColor(0, 0, 0);
   doc.setFont('helvetica', 'normal');
   doc.text(facture.reference, 142, yPos + 3);
   const invoiceDate = facture.date_creation ? new Date(facture.date_creation).toLocaleDateString('fr-FR') : new Date().toLocaleDateString('fr-FR');
@@ -112,10 +101,8 @@ doc.text(
   yPos += 10;
   
   // ============== SECTION CLIENT ==============
-  // En-tête FACTURER À et RÉF CLIENT
   doc.setFillColor(...blueHeader);
   doc.rect(14, yPos, 90, 7, 'F');
-  doc.setFillColor(...blueHeader);
   doc.rect(105, yPos, 90, 7, 'F');
   
   doc.setTextColor(255, 255, 255);
@@ -124,49 +111,26 @@ doc.text(
   doc.text('RÉF CLIENT', 107, yPos + 5);
   
   yPos += 7;
-  
-  // Informations client (gauche) et détails logistiques (droite)
   doc.setTextColor(0, 0, 0);
-  doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   
   const leftCol = 16;
   const rightCol = 107;
   
-  // Colonne gauche - Client
   doc.setFont('helvetica', 'bold');
   doc.text('Client :', leftCol, yPos + 5);
   doc.setFont('helvetica', 'normal');
-  doc.text(client.nom || facture.client_nom, leftCol + 15, yPos + 5);
+  doc.text(facture.client?.nom || facture.client_nom || '', leftCol + 15, yPos + 5);
   
   doc.setFont('helvetica', 'bold');
   doc.text('NIF', leftCol, yPos + 10);
   doc.setFont('helvetica', 'normal');
-  doc.text(client.nif || '', leftCol + 15, yPos + 10);
+  doc.text(facture.client?.nif || '', leftCol + 15, yPos + 10);
   
   doc.setFont('helvetica', 'bold');
-  doc.text('Adresse', leftCol, yPos + 15);
+  doc.text('Port d\'arrivée :', leftCol, yPos + 15);
   doc.setFont('helvetica', 'normal');
-  doc.text(client.adresse || '', leftCol + 15, yPos + 15);
-  
-  doc.setFont('helvetica', 'bold');
-  doc.text('Tel', leftCol, yPos + 20);
-  doc.setFont('helvetica', 'normal');
-  doc.text(client.telephone || '', leftCol + 15, yPos + 20);
-  
-  doc.setFont('helvetica', 'bold');
-  doc.text('Email :', leftCol, yPos + 25);
-  doc.setFont('helvetica', 'normal');
-  doc.text(client.email || '', leftCol + 15, yPos + 25);
-  
-  doc.setFont('helvetica', 'bold');
-  doc.text('Port d\'arrivée :', leftCol, yPos + 30);
-  doc.setFont('helvetica', 'normal');
-  doc.text(facture.port_arrive || '', leftCol + 25, yPos + 30);
-  
-  // Colonne droite - Détails logistiques
-  const etaDate = facture.eta ? new Date(facture.eta).toLocaleDateString('fr-FR') : '';
-  const etdDate = facture.etd ? new Date(facture.etd).toLocaleDateString('fr-FR') : '';
+  doc.text(facture.port_arrive || '', leftCol + 25, yPos + 15);
   
   doc.setFont('helvetica', 'bold');
   doc.text('Vessel', rightCol, yPos + 5);
@@ -179,31 +143,14 @@ doc.text(
   doc.text(facture.voyage || '', rightCol + 20, yPos + 10);
   
   doc.setFont('helvetica', 'bold');
-  doc.text('Port d\'arrivé', rightCol, yPos + 15);
+  doc.text('BL NO', rightCol, yPos + 15);
   doc.setFont('helvetica', 'normal');
-  doc.text(facture.port_arrive || '', rightCol + 25, yPos + 15);
+  doc.text(facture.bl || '', rightCol + 20, yPos + 15);
   
-  doc.setFont('helvetica', 'bold');
-  doc.text('ETA', rightCol, yPos + 20);
-  doc.setFont('helvetica', 'normal');
-  doc.text(etaDate, rightCol + 20, yPos + 20);
-  
-  doc.setFont('helvetica', 'bold');
-  doc.text('ETD', rightCol, yPos + 25);
-  doc.setFont('helvetica', 'normal');
-  doc.text(etdDate, rightCol + 20, yPos + 25);
-  
-  doc.setFont('helvetica', 'bold');
-  doc.text('BL NO', rightCol, yPos + 30);
-  doc.setFont('helvetica', 'normal');
-  doc.text(facture.bl || '', rightCol + 20, yPos + 30);
-  
-  yPos += 38;
+  yPos += 25;
   
   // ============== TABLEAU DES ITEMS ==============
   const currencyLabel = facture.devise || 'MRU';
-  
-  // Préparer les données pour le tableau
   const tableData = facture.items.map(item => [
     item.libelle,
     item.quantite,
@@ -211,7 +158,6 @@ doc.text(
     `${Number(item.montant_total).toLocaleString()} ${currencyLabel}`
   ]);
   
-  // Calculer les totaux
   const subtotal = facture.items.reduce((sum, item) => sum + Number(item.montant_total || 0), 0);
   const taxeRate = facture.tva ? 0.16 : 0;
   const taxe = subtotal * taxeRate;
@@ -219,130 +165,73 @@ doc.text(
   
   autoTable(doc, {
     startY: yPos,
-    head: [[
-      'DESCRIPTION',
-      'QTÉ',
-      `PRIX UNITAIRE ${currencyLabel}`,
-      `MONTANT ${currencyLabel}`
-    ]],
+    head: [['DESCRIPTION', 'QTÉ', `PRIX UNITAIRE ${currencyLabel}`, `MONTANT ${currencyLabel}`]],
     body: tableData,
     theme: 'grid',
-    headStyles: {
-      fillColor: blueHeader,
-      textColor: [255, 255, 255],
-      fontStyle: 'bold',
-      fontSize: 10
-    },
-    bodyStyles: {
-      fontSize: 9
-    },
-    columnStyles: {
-      0: { cellWidth: 90 },
-      1: { cellWidth: 30, halign: 'center' },
-      2: { cellWidth: 35, halign: 'right' },
-      3: { cellWidth: 35, halign: 'right' }
-    },
-    margin: { left: 14, right: 14 }
+    headStyles: { fillColor: blueHeader, textColor: [255, 255, 255], fontStyle: 'bold' },
+    columnStyles: { 0: { cellWidth: 90 }, 1: { halign: 'center' }, 2: { halign: 'right' }, 3: { halign: 'right' } }
   });
   
   yPos = doc.lastAutoTable.finalY + 5;
   
-  // ============== SECTION REMERCIEMENTS ET TOTAUX ==============
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'italic');
-  doc.setTextColor(41, 98, 255);
-  doc.text('Nous vous remercions de votre confiance.', 14, yPos + 5);
-  
-  // Tableau des totaux
+  // ============== TOTAUX ==============
   const xTotaux = 130;
-  yPos += 2;
-  
-  doc.setFillColor(...lightBlue);
-  doc.rect(xTotaux, yPos, 40, 6, 'F');
-  doc.setTextColor(0, 0, 0);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9);
-  doc.text('SOUS-TOTAL', xTotaux + 2, yPos + 4);
-  doc.text(`${subtotal.toLocaleString()}`, 195, yPos + 4, { align: 'right' });
-  
+  doc.text('SOUS-TOTAL', xTotaux, yPos + 4);
+  doc.text(`${subtotal.toLocaleString()} ${currencyLabel}`, 195, yPos + 4, { align: 'right' });
   yPos += 6;
-  doc.rect(xTotaux, yPos, 40, 6);
-  doc.text('TAUX TVA', xTotaux + 2, yPos + 4);
-  doc.text(`${(taxeRate * 100).toFixed(0)}%`, 195, yPos + 4, { align: 'right' });
-  
-  yPos += 6;
-  doc.rect(xTotaux, yPos, 40, 6);
-  doc.text('TAXE', xTotaux + 2, yPos + 4);
-  doc.text(`${taxe.toLocaleString()}`, 195, yPos + 4, { align: 'right' });
-  
+  doc.text('TAXE (TVA 16%)', xTotaux, yPos + 4);
+  doc.text(`${taxe.toLocaleString()} ${currencyLabel}`, 195, yPos + 4, { align: 'right' });
   yPos += 6;
   doc.setFillColor(...blueHeader);
-  doc.rect(xTotaux, yPos, 40, 7, 'F');
-  doc.setTextColor(0, 0, 0);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.text('TOTAL', xTotaux + 2, yPos + 5);
+  doc.rect(xTotaux - 2, yPos, 67, 7, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.text('TOTAL DEVIS', xTotaux, yPos + 5);
   doc.text(`${total.toLocaleString()} ${currencyLabel}`, 195, yPos + 5, { align: 'right' });
   
-  yPos += 12;
-  
-  // Total en lettres
-  const currencyWords = {
-    'MRU': 'Ouguiyas',
-    'EUR': 'Euros',
-    'DOLLAR': 'Dollars',
-    'XOF': 'Francs CFA'
-  };
-  const currency = currencyWords[facture.devise] || 'Ouguiyas';
-  const totalWords = numberToFrenchWords(Math.round(total)) + ' ' + currency;
-  
-  doc.setFillColor(230, 230, 250);
-  doc.rect(14, yPos, 180, 8, 'F');
-  doc.setTextColor(0, 0, 0);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9);
-  doc.text(`Total T.T.C. ${currencyLabel}`, 16, yPos + 5);
-  doc.setFont('helvetica', 'normal');
-  doc.text(totalWords, 55, yPos + 5);
-  
   yPos += 15;
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'italic');
-  doc.text('EXCULDING: ALL CUSTOMS DUTIES AND TAXES', 14, yPos);
-  
-  yPos += 10;
-  
-  // ============== SIGNATURES ==============
+  doc.setTextColor(0, 0, 0);
+  const currencyWords = { 'MRU': 'Ouguiyas', 'EUR': 'Euros', 'DOLLAR': 'Dollars', 'XOF': 'Francs CFA' };
+  const totalWords = numberToFrenchWords(Math.round(total)) + ' ' + (currencyWords[facture.devise] || 'Ouguiyas');
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Arrêté le présent devis à la somme de : ${totalWords}`, 14, yPos);
+
+  yPos += 15;
+
+  // ============== SIGNATURES & CACHETS ==============
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9);
   doc.text('Service d\'exploitation', 30, yPos);
   doc.text('Service Financier', 140, yPos);
   
-  // Ligne de signature
-  doc.line(20, yPos + 15, 80, yPos + 15);
-  doc.line(130, yPos + 15, 190, yPos + 15);
+  // Ajout du cachet automatique si validé
+  if (facture.status === 'valide') {
+    let signatureImg = null;
+    switch (facture.valideur.type) {
+      case 'directeur_general': signatureImg = sigDG; break;
+      case 'directeur_operations': signatureImg = sigDO; break;
+      case 'comptable': signatureImg = sigComptable; break;
+    }
+
+    if (signatureImg) {
+      // Signature placée sous "Service d'exploitation"
+      doc.addImage(signatureImg, 'PNG', 25, yPos, 45, 45);
+    }
+  }
   
-  yPos += 25;
+  doc.setDrawColor(200, 200, 200);
+  doc.line(20, yPos + 22, 80, yPos + 22); 
+  doc.line(130, yPos + 22, 190, yPos + 22);
   
-  // ============== COORDONNÉES BANCAIRES ==============
-  doc.setFont('helvetica', 'bold');
-  doc.text('Coordonnés bancaires :', 14, yPos);
-  yPos += 5;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-  doc.text('Banque : BMCI', 14, yPos);
-  yPos += 4;
-  doc.text('IBAN : MR1300010000010485740015102', 14, yPos);
-  yPos += 4;
-  doc.text('CODE SWIFT : MBICMRMRXXX', 14, yPos);
+  yPos += 60;
   
   // ============== PIED DE PAGE ==============
   const pageHeight = doc.internal.pageSize.height;
   doc.setFontSize(7);
   doc.setFont('helvetica', 'italic');
-  doc.text('Siège social : SOCO BMCI N°0190 Moughata de Tevragh Zeina -Nouakchott-Mauritanie', 14, pageHeight - 10);
-  doc.text('Tél : 26 31 98 31/31 31 98 31 / RC N° BP :', 14, pageHeight - 6);
+  doc.text('EXCULDING: ALL CUSTOMS DUTIES AND TAXES', 14, yPos);
   
-  // Sauvegarder le PDF
+  doc.text('Siège social : SOCO BMCI N°0190 Moughata de Tevragh Zeina - Nouakchott - Mauritanie', 105, pageHeight - 10, { align: 'center' });
+  doc.text('Tél : 26 31 98 31 / 31 31 98 31 | NIF : 01328566', 105, pageHeight - 6, { align: 'center' });
+  
   doc.save(`${facture.reference}.pdf`);
 };

@@ -49,7 +49,7 @@ function ClientModal({ client, onClose, onSave }) {
                 type="text"
                 value={formData.nom}
                 onChange={(e) => setFormData({...formData, nom: e.target.value})}
-                className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-buttonGradientPrimary outline-none"
                 placeholder="Ex: SARL Global Services"
               />
             </div>
@@ -63,7 +63,7 @@ function ClientModal({ client, onClose, onSave }) {
                   type="text"
                   value={formData.nif}
                   onChange={(e) => setFormData({...formData, nif: e.target.value})}
-                  className="w-full pl-10 p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full pl-10 p-2.5 border rounded-lg focus:ring-2 focus:ring-buttonGradientPrimary outline-none"
                   placeholder="N° d'identification"
                 />
               </div>
@@ -78,7 +78,7 @@ function ClientModal({ client, onClose, onSave }) {
                   type="tel"
                   value={formData.telephone}
                   onChange={(e) => setFormData({...formData, telephone: e.target.value})}
-                  className="w-full pl-10 p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full pl-10 p-2.5 border rounded-lg focus:ring-2 focus:ring-buttonGradientPrimary outline-none"
                 />
               </div>
             </div>
@@ -93,7 +93,7 @@ function ClientModal({ client, onClose, onSave }) {
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({...formData, email: e.target.value})}
-                className="w-full pl-10 p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="w-full pl-10 p-2.5 border rounded-lg focus:ring-2 focus:ring-buttonGradientPrimary outline-none"
               />
             </div>
           </div>
@@ -107,7 +107,7 @@ function ClientModal({ client, onClose, onSave }) {
                 rows="3"
                 value={formData.adresse}
                 onChange={(e) => setFormData({...formData, adresse: e.target.value})}
-                className="w-full pl-10 p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="w-full pl-10 p-2.5 border rounded-lg focus:ring-2 focus:ring-buttonGradientPrimary outline-none"
                 placeholder="Adresse complète du siège"
               />
             </div>

@@ -1,4 +1,4 @@
-import Logo from "../../../assets/logo.png";
+import Logo from "../../../assets/logo.jpeg";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 import { MyNavLink } from "../shared/navLink";
@@ -24,6 +24,8 @@ import { Header } from "./header";
 import MenuCompte from "./popover";
 import { FaFolder } from "react-icons/fa";
 import { aLeRole, hasPermission } from "@/lib/utils";
+import { HiNewspaper } from "react-icons/hi2";
+
 
 
 function SideBar({changeVisibility}) {
@@ -36,9 +38,9 @@ function SideBar({changeVisibility}) {
   }
 
   const frenshAnimation =
-    "flex flex-col py-[10px] gap-10 w-[250px] bg-whiteColor  h-full text-[12px] overflow-y-scroll z-50 max-lg:absolute max-md:absolute max-sm:absolute transform max-lg:animate-sideBarLeftAnimation max-md:animate-sideLeftBarAnimation max-sm:animate-sideLeftBarAnimation";
+    "flex flex-col py-[10px] gap-4 w-[250px] bg-whiteColor  h-full text-[12px] overflow-y-scroll z-50 max-lg:absolute max-md:absolute max-sm:absolute transform max-lg:animate-sideBarLeftAnimation max-md:animate-sideLeftBarAnimation max-sm:animate-sideLeftBarAnimation";
   const arabicAnimation =
-    "flex flex-col py-[100px] gap-10 w-[250px] font-arabic bg-whiteColor  h-full text-[12px] overflow-y-scroll z-50 max-lg:absolute max-md:absolute max-sm:absolute transform max-lg:animate-sideBarRightAnimation max-md:animate-sideBarRightAnimation max-sm:animate-sideBarRightAnimation";
+    "flex flex-col py-[100px] gap-4 w-[250px] font-arabic bg-whiteColor  h-full text-[12px] overflow-y-scroll z-50 max-lg:absolute max-md:absolute max-sm:absolute transform max-lg:animate-sideBarRightAnimation max-md:animate-sideBarRightAnimation max-sm:animate-sideBarRightAnimation";
 
   return (
     <>
@@ -53,7 +55,7 @@ function SideBar({changeVisibility}) {
 
           <div className="flex items-center justify-center">
             <img
-              className="w-[100px] h-[60px] aspect-square"
+              className="w-[90px] h-[90px] aspect-square"
               src={Logo}
               alt="logo images"
             />
@@ -63,17 +65,22 @@ function SideBar({changeVisibility}) {
               {/* <MyNavLink route="" label={t("Acceuil")} icon={RiDashboardFill}/> */}
               {/* <MyNavLink route="demandes" label={t("Demandes")} icon={FaTasks}/> */}
               {/* {(aLeRole("numerisation") || aLeRole("validation") || role == 'super-admin') && <MyNavLink route="dossiers" label={t("Dossiers")} icon={FaFolder}/>}
-              {(aLeRole("archivage") || role == 'super-admin') && <MyNavLink route="archives" label={t("Archives")} icon={FaArchive}/>}
               {role == 'super-admin' && <MyNavLink route="groupes" label={t("Groupes")} icon={MdGroups}/>}
               {(aLeRole("admin") || role == 'super-admin') && <MyNavLink route="types" label={t("Types")} icon={MdCategory}/>}
               {aLeRole("admin") && <MyNavLink route="utilisateurs" label={t("Utilisateurs")} icon={FaUsers}/>}
               {role == 'super-admin' && <MyNavLink route="utilisateurs-admin" label={t("Utilisateurs Admin")} icon={FaUsers}/>} */}
               {<MyNavLink route="" label={t("Dashboard")} icon={RiDashboardFill}/>} 
-              {hasPermission("produits") && <MyNavLink route="produits" label={t("Produits")} icon={FaProductHunt}/>} 
-              {hasPermission("clients") && <MyNavLink route="clients" label={t("Clients")} icon={FaUsers}/>} 
+              {hasPermission("rotations") && <MyNavLink route="rotations" label={t("Rotations")} icon={FaProductHunt}/>} 
+              {!hasPermission("expression_besoin") ?  <></> : <MyNavLink route="expression_besoin" label={t("Expression de Besoin")} icon={FaTasks}/>} 
               {!hasPermission("note_frais") ?  <></> : <MyNavLink route="notes_frais" label={t("Notes de Frais")} icon={FaTasks}/>} 
               {hasPermission("devis") && <MyNavLink route="devis" label={t("Devis")} icon={FaFile}/>} 
               {hasPermission("factures") && <MyNavLink route="factures" label={t("Factures")} icon={FaFile}/>} 
+              {!hasPermission("bon_commande") ?  <></> : <MyNavLink route="bon_de_commande" label={t("Bon de Commande")} icon={HiNewspaper}/>} 
+              {!hasPermission("bad") ?  <></> : <MyNavLink route="bad" label={t("Bons à Délivrer")} icon={HiNewspaper}/>} 
+              {(hasPermission("archives")) && <MyNavLink route="archives" label={t("Archives")} icon={FaArchive}/>}
+              {hasPermission("clients") && <MyNavLink route="clients" label={t("Clients")} icon={FaUsers}/>} 
+              {hasPermission("fournisseurs") && <MyNavLink route="fournisseurs" label={t("Fournisseurs")} icon={FaUsers}/>} 
+              {hasPermission("types de materiel") && <MyNavLink route="types" label={t("Types de Materiel")} icon={MdCategory}/>} 
 
 
 

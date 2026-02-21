@@ -70,11 +70,11 @@ export const hasPermission = (page) => {
 
 
   const users_permissions = {
-    'Assistant' : ['note_frais'],
-    'Agent Port' : ['produits', 'clients'],
-    'Comptable' : ['factures', 'note_frais', 'devis', 'clients'],
-    'Directeur des Opérations' : ['factures', 'note_frais', 'devis', 'clients', 'produits'],
-    'Directeur Général' : ['factures', 'note_frais', 'devis', 'clients', 'produits'],
+    'Assistant' : ['note_frais', 'expression_besoin', 'archives'],
+    'Agent Port' : ['rotations', 'clients', 'expression_besoin', 'archives'],
+    'Comptable' : ['factures', 'note_frais', 'devis', 'clients', 'expression_besoin', 'fournisseurs', 'archives'],
+    'Directeur des Opérations' : ['factures', 'note_frais', 'devis', 'clients', 'rotations', 'expression_besoin', 'fournisseurs', 'types de materiel', 'bon_commande', 'bad', 'archives'],
+    'Directeur Général' : ['factures', 'note_frais', 'expression_besoin', 'devis', 'clients', 'rotations', 'fournisseurs', 'types de materiel', 'bon_commande', 'bad', 'archives'],
   }
 
 
@@ -91,5 +91,12 @@ export const hasPermission = (page) => {
 export const getRole = () => {
   const role = localStorage.getItem("role");
   return role || null;
+};
+
+
+export const getUserData = () => {
+  const role = localStorage.getItem("role");
+  const userId = localStorage.getItem("user_id");
+  return { role, userId } ;
 };
 

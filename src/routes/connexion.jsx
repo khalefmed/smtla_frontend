@@ -67,7 +67,7 @@ function Connexion() {
 
             
             <form onSubmit={connexion} className="lg:w-[40%] flex flex-col px-8 py-16 items-center justify-center align-center gap-8 ">
-              <img src={Logo}  width={220} className="mb-4" alt="" />
+              <img src={Logo}  width={140} className="mb-4" alt="" />
               <div className="flex flex-col gap-3 w-full">
                 <div className="flex flex-row gap-2 bg-bgGreyColor px-4 py-3 text-sm w-full font-light rounded-md">
                   <img src={Person} alt="" />
