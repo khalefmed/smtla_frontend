@@ -30,7 +30,7 @@ function BonsCommande() {
   /* =========================
      LOGIQUE DES PERMISSIONS
   ========================= */
-  const peutValider = ["Directeur des Opérations", "Comptable", "Directeur Général"].includes(currentRole);
+  const peutValider = ["Comptable", "Directeur Général"].includes(currentRole);
   
   const peutSupprimer = ["Directeur Général", "Directeur des Opérations"].includes(currentRole);
 

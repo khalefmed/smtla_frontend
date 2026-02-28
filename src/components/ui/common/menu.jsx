@@ -1,4 +1,4 @@
-import Logo from "../../../assets/logo.jpeg";
+import Logo from "../../../assets/logo.png";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 import { MyNavLink } from "../shared/navLink";
@@ -38,9 +38,9 @@ function SideBar({changeVisibility}) {
   }
 
   const frenshAnimation =
-    "flex flex-col py-[10px] gap-4 w-[250px] bg-whiteColor  h-full text-[12px] overflow-y-scroll z-50 max-lg:absolute max-md:absolute max-sm:absolute transform max-lg:animate-sideBarLeftAnimation max-md:animate-sideLeftBarAnimation max-sm:animate-sideLeftBarAnimation";
+    "flex flex-col py-[10px] gap-6 w-[250px] bg-whiteColor  h-full text-[12px] overflow-y-scroll z-50 max-lg:absolute max-md:absolute max-sm:absolute transform max-lg:animate-sideBarLeftAnimation max-md:animate-sideLeftBarAnimation max-sm:animate-sideLeftBarAnimation";
   const arabicAnimation =
-    "flex flex-col py-[100px] gap-4 w-[250px] font-arabic bg-whiteColor  h-full text-[12px] overflow-y-scroll z-50 max-lg:absolute max-md:absolute max-sm:absolute transform max-lg:animate-sideBarRightAnimation max-md:animate-sideBarRightAnimation max-sm:animate-sideBarRightAnimation";
+    "flex flex-col py-[100px] gap-6 w-[250px] font-arabic bg-whiteColor  h-full text-[12px] overflow-y-scroll z-50 max-lg:absolute max-md:absolute max-sm:absolute transform max-lg:animate-sideBarRightAnimation max-md:animate-sideBarRightAnimation max-sm:animate-sideBarRightAnimation";
 
   return (
     <>
@@ -55,7 +55,7 @@ function SideBar({changeVisibility}) {
 
           <div className="flex items-center justify-center">
             <img
-              className="w-[90px] h-[90px] aspect-square"
+              className="w-[100px] h-[60px] aspect-square"
               src={Logo}
               alt="logo images"
             />
@@ -80,6 +80,7 @@ function SideBar({changeVisibility}) {
               {(hasPermission("archives")) && <MyNavLink route="archives" label={t("Archives")} icon={FaArchive}/>}
               {hasPermission("clients") && <MyNavLink route="clients" label={t("Clients")} icon={FaUsers}/>} 
               {hasPermission("fournisseurs") && <MyNavLink route="fournisseurs" label={t("Fournisseurs")} icon={FaUsers}/>} 
+              {hasPermission("Rapports") && <MyNavLink route="rapport" label={t("Rapports")} icon={FaFile}/>} 
               {hasPermission("types de materiel") && <MyNavLink route="types" label={t("Types de Materiel")} icon={MdCategory}/>} 
 
 

@@ -70,11 +70,11 @@ export const hasPermission = (page) => {
 
 
   const users_permissions = {
-    'Assistant' : ['note_frais', 'expression_besoin', 'archives'],
-    'Agent Port' : ['rotations', 'clients', 'expression_besoin', 'archives'],
-    'Comptable' : ['factures', 'note_frais', 'devis', 'clients', 'expression_besoin', 'fournisseurs', 'archives'],
-    'Directeur des Opérations' : ['factures', 'note_frais', 'devis', 'clients', 'rotations', 'expression_besoin', 'fournisseurs', 'types de materiel', 'bon_commande', 'bad', 'archives'],
-    'Directeur Général' : ['factures', 'note_frais', 'expression_besoin', 'devis', 'clients', 'rotations', 'fournisseurs', 'types de materiel', 'bon_commande', 'bad', 'archives'],
+    'Assistant' : ['note_frais', 'expression_besoin'],
+    'Agent Port' : ['rotations', 'clients', 'types de materiel', 'expression_besoin'],
+    'Comptable' : ['factures', 'note_frais', 'devis', 'clients', 'expression_besoin', 'fournisseurs', 'bon_commande'],
+    'Directeur des Opérations' : ['factures', 'note_frais', 'devis', 'clients', 'rotations', 'expression_besoin', 'fournisseurs', 'types de materiel', 'bon_commande', 'bad', 'archives', 'Rapports'],
+    'Directeur Général' : ['factures', 'note_frais', 'expression_besoin', 'devis', 'clients', 'rotations', 'fournisseurs', 'types de materiel', 'bon_commande', 'archives'],
   }
 
 

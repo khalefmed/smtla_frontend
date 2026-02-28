@@ -36,6 +36,7 @@ import Fournisseurs from "./routes/fournisseurs";
 import BonsCommande from "./routes/bon_commande";
 import Rotations from "./routes/rotations";
 import { BAD } from "./routes/bad";
+import Rapports from "./routes/rapport";
 
 
 
@@ -99,6 +100,10 @@ const router = createBrowserRouter([
       {
         path: "/archives",
         element: <ProtectedRoute component={Archives} />,
+      },
+      {
+        path: "/rapport",
+        element: <ProtectedRoute component={Rapports} />,
       },
       {
         path: "/dossiers/details/:id",

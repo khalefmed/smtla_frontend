@@ -30,8 +30,8 @@ function ExpressionsBesoin() {
     fetchExpressions(); 
   }, []);
 
-  const peutGererStatut = ["Directeur des Opérations", "Comptable", "Directeur Général"].includes(currentRole);
-  const peutSupprimer = ["Directeur des Opérations", "Directeur Général"].includes(currentRole);
+  const peutGererStatut = ["Directeur des Opérations", "Comptable"].includes(currentRole);
+  const peutSupprimer = [""].includes(currentRole);
 
   const peutModifier = (expression) => {
     if (expression.status === 'valide') return currentRole === "Directeur Général";

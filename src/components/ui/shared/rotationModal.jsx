@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { api } from "@/lib/api";
-import { X, Calendar, Package, Truck, Save, Hash, User, Info } from 'lucide-react';
+import { 
+  X, Calendar, Package, Truck, Save, Hash, 
+  User, Info, Ship // Ajout de l'icône Ship
+} from 'lucide-react';
 
 function RotationModal({ rotation, type, onClose, onSave }) {
   const [clients, setClients] = useState([]);
@@ -13,7 +16,7 @@ function RotationModal({ rotation, type, onClose, onSave }) {
     observation: '',
     camion: '',
     quantite: 1,
-    // On initialise dynamiquement selon le type
+    navire: '', // Valeur par défaut identique au modèle Django
     [type === 'entrantes' ? 'date_arrivee' : 'date_sortie']: new Date().toISOString().slice(0, 16)
   });
 
@@ -35,6 +38,7 @@ function RotationModal({ rotation, type, onClose, onSave }) {
         observation: rotation.observation || '',
         camion: rotation.camion,
         quantite: rotation.quantite,
+        navire: rotation.navire || 'MV-BRIALLANCE', // Récupération du navire existant
         [type === 'entrantes' ? 'date_arrivee' : 'date_sortie']: 
           (type === 'entrantes' ? rotation.date_arrivee : rotation.date_sortie).slice(0, 16)
       });
@@ -61,7 +65,7 @@ function RotationModal({ rotation, type, onClose, onSave }) {
           <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-full transition-colors"><X className="w-5 h-5" /></button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-8 space-y-4">
+        <form onSubmit={handleSubmit} className="p-8 space-y-4 max-h-[80vh] overflow-y-auto">
           
           {/* Client Selection */}
           <div className="space-y-1.5">
@@ -80,18 +84,35 @@ function RotationModal({ rotation, type, onClose, onSave }) {
             </div>
           </div>
 
-          {/* Material Selection */}
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold uppercase text-gray-400 tracking-widest ml-1">Type de Matériel</label>
-            <select 
-              required 
-              value={formData.type_materiel_id} 
-              onChange={(e) => setFormData({...formData, type_materiel_id: e.target.value})}
-              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-indigo-500 font-medium"
-            >
-              <option value="">Choisir le matériel...</option>
-              {typesMateriel.map(t => <option key={t.id} value={t.id}>{t.nom}</option>)}
-            </select>
+          <div className="grid grid-cols-2 gap-4">
+            {/* Material Selection */}
+            <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase text-gray-400 tracking-widest ml-1">Type de Matériel</label>
+                <select 
+                required 
+                value={formData.type_materiel_id} 
+                onChange={(e) => setFormData({...formData, type_materiel_id: e.target.value})}
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-indigo-500 font-medium"
+                >
+                <option value="">Choisir...</option>
+                {typesMateriel.map(t => <option key={t.id} value={t.id}>{t.nom}</option>)}
+                </select>
+            </div>
+            {/* Navire Selection/Input */}
+            <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase text-gray-400 tracking-widest ml-1">Navire</label>
+                <div className="relative">
+                    <Ship className="absolute left-3 top-3.5 w-4 h-4 text-gray-400" />
+                    <input 
+                        required 
+                        type="text" 
+                        placeholder="Nom du navire"
+                        value={formData.navire} 
+                        onChange={(e) => setFormData({...formData, navire: e.target.value})} 
+                        className="w-full pl-10 p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-indigo-500 font-medium" 
+                    />
+                </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -99,12 +120,12 @@ function RotationModal({ rotation, type, onClose, onSave }) {
               <label className="text-[10px] font-bold uppercase text-gray-400 tracking-widest ml-1">N° Bordereau</label>
               <div className="relative">
                 <Hash className="absolute left-3 top-3.5 w-4 h-4 text-gray-400" />
-                <input required type="text" value={formData.numero_bordereau} onChange={(e) => setFormData({...formData, numero_bordereau: e.target.value})} className="w-full pl-10 p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" />
+                <input required type="text" value={formData.numero_bordereau} onChange={(e) => setFormData({...formData, numero_bordereau: e.target.value})} className="w-full pl-10 p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-indigo-500" />
               </div>
             </div>
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold uppercase text-gray-400 tracking-widest ml-1">Quantité</label>
-              <input required type="number" value={formData.quantite} onChange={(e) => setFormData({...formData, quantite: e.target.value})} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" />
+              <input required type="number" value={formData.quantite} onChange={(e) => setFormData({...formData, quantite: e.target.value})} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-indigo-500" />
             </div>
           </div>
 
@@ -113,7 +134,7 @@ function RotationModal({ rotation, type, onClose, onSave }) {
               <label className="text-[10px] font-bold uppercase text-gray-400 tracking-widest ml-1">Camion</label>
               <div className="relative">
                 <Truck className="absolute left-3 top-3.5 w-4 h-4 text-gray-400" />
-                <input required type="text" value={formData.camion} onChange={(e) => setFormData({...formData, camion: e.target.value})} className="w-full pl-10 p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" />
+                <input required type="text" value={formData.camion} onChange={(e) => setFormData({...formData, camion: e.target.value})} className="w-full pl-10 p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-indigo-500" />
               </div>
             </div>
             <div className="space-y-1.5">
@@ -137,7 +158,7 @@ function RotationModal({ rotation, type, onClose, onSave }) {
               <textarea 
                 value={formData.observation} 
                 onChange={(e) => setFormData({...formData, observation: e.target.value})} 
-                className="w-full pl-10 p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none min-h-[80px]" 
+                className="w-full pl-10 p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none min-h-[60px] focus:border-indigo-500" 
               />
             </div>
           </div>

@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import { X, Building2, Phone, Mail, MapPin, Save, Globe } from 'lucide-react';
+import { X, Building2, Phone, Mail, MapPin, Save, Fingerprint, FileText } from 'lucide-react';
 
 function FournisseurModal({ fournisseur, onClose, onSave }) {
   const [formData, setFormData] = useState({
     nom: '',
+    nif: '', // Ajouté
+    raison_sociale: '', // Ajouté
     telephone: '',
     email: '',
     adresse: ''
@@ -13,6 +15,8 @@ function FournisseurModal({ fournisseur, onClose, onSave }) {
     if (fournisseur) {
       setFormData({
         nom: fournisseur.nom || '',
+        nif: fournisseur.nif || '', // Ajouté
+        raison_sociale: fournisseur.raison_sociale || '', // Ajouté
         telephone: fournisseur.telephone || '',
         email: fournisseur.email || '',
         adresse: fournisseur.adresse || ''
@@ -41,10 +45,11 @@ function FournisseurModal({ fournisseur, onClose, onSave }) {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-8 space-y-5">
-          {/* Nom */}
+        <form onSubmit={handleSubmit} className="p-8 space-y-4">
+          
+          {/* Nom / Nom Commercial */}
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold uppercase text-gray-400 tracking-widest ml-1">Raison Sociale</label>
+            <label className="text-[10px] font-bold uppercase text-gray-400 tracking-widest ml-1">Nom Commercial</label>
             <div className="relative">
               <Building2 className="absolute left-3 top-3.5 w-4 h-4 text-gray-400" />
               <input 
@@ -53,8 +58,39 @@ function FournisseurModal({ fournisseur, onClose, onSave }) {
                 value={formData.nom} 
                 onChange={(e) => setFormData({...formData, nom: e.target.value})} 
                 className="w-full pl-10 p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-buttonGradientPrimary transition-all font-medium" 
-                placeholder="Nom de l'entreprise"
+                placeholder="Ex: Global Logistics SARL"
               />
+            </div>
+          </div>
+
+          {/* Raison Sociale & NIF (Grid) */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase text-gray-400 tracking-widest ml-1">Raison Sociale</label>
+              <div className="relative">
+                <FileText className="absolute left-3 top-3.5 w-4 h-4 text-gray-400" />
+                <input 
+                  type="text" 
+                  value={formData.raison_sociale} 
+                  onChange={(e) => setFormData({...formData, raison_sociale: e.target.value})} 
+                  className="w-full pl-10 p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-buttonGradientPrimary transition-all" 
+                  placeholder="Nom officiel"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase text-gray-400 tracking-widest ml-1 text-amber-600">NIF</label>
+              <div className="relative">
+                <Fingerprint className="absolute left-3 top-3.5 w-4 h-4 text-amber-500" />
+                <input 
+                  type="text" 
+                  value={formData.nif} 
+                  onChange={(e) => setFormData({...formData, nif: e.target.value})} 
+                  className="w-full pl-10 p-3 bg-gray-50 border border-amber-100 rounded-xl outline-none focus:border-buttonGradientPrimary transition-all font-normal" 
+                  placeholder="NIF du fournisseur"
+                />
+              </div>
             </div>
           </div>
 
@@ -65,6 +101,7 @@ function FournisseurModal({ fournisseur, onClose, onSave }) {
               <div className="relative">
                 <Phone className="absolute left-3 top-3.5 w-4 h-4 text-gray-400" />
                 <input 
+                  required
                   type="tel" 
                   value={formData.telephone} 
                   onChange={(e) => setFormData({...formData, telephone: e.target.value})} 
@@ -80,6 +117,7 @@ function FournisseurModal({ fournisseur, onClose, onSave }) {
               <div className="relative">
                 <Mail className="absolute left-3 top-3.5 w-4 h-4 text-gray-400" />
                 <input 
+                  required
                   type="email" 
                   value={formData.email} 
                   onChange={(e) => setFormData({...formData, email: e.target.value})} 
@@ -96,6 +134,7 @@ function FournisseurModal({ fournisseur, onClose, onSave }) {
             <div className="relative">
               <MapPin className="absolute left-3 top-3.5 w-4 h-4 text-gray-400" />
               <input 
+                required
                 type="text" 
                 value={formData.adresse} 
                 onChange={(e) => setFormData({...formData, adresse: e.target.value})} 
@@ -116,10 +155,10 @@ function FournisseurModal({ fournisseur, onClose, onSave }) {
             </button>
             <button 
               type="submit"
-              className="flex-1 px-6 py-3.5 bg-buttonGradientSecondary text-white rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-100 flex items-center justify-center gap-2 transition-all active:scale-95"
+              className="flex-1 px-6 py-3.5 bg-buttonGradientPrimary text-white rounded-xl font-bold hover:bg-buttonGradientSecondary shadow-lg shadow-indigo-100 flex items-center justify-center gap-2 transition-all active:scale-95"
             >
               <Save className="w-4 h-4" />
-              {fournisseur ? "Mettre à jour" : "Créer le compte"}
+              {fournisseur ? "Mettre à jour" : "Créer"}
             </button>
           </div>
         </form>

@@ -128,6 +128,7 @@ function NotesDeFrais() {
   const [selectedNote, setSelectedNote] = useState(null);
 
   const userRole = getRole();
+  console.log("User Role:", userRole);
   const isDG = userRole === 'Directeur Général' || userRole === 'admin';
 
   useEffect(() => { fetchNotes(); }, []);
@@ -263,11 +264,11 @@ function NotesDeFrais() {
                       <button onClick={() => handleExportPdf(note)} title={t("Télécharger PDF")} className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg"><Download className="w-5 h-5" /></button>
                     )}
 
-                    {canEdit && (
+                    {(canEdit && isDG) && (
                       <button onClick={() => { setSelectedNote(note); setShowModal(true); }} title={t("Modifier")} className="p-2 hover:bg-indigo-50 text-indigo-500 rounded-lg"><Edit3 className="w-5 h-5" /></button>
                     )}
 
-                    {!isValide && (
+                    {(!isValide && isDG) && (
                       <button onClick={() => handleDelete(note.id)} title={t("Supprimer")} className="p-2 hover:bg-red-50 text-red-500 rounded-lg"><Trash2 className="w-5 h-5" /></button>
                     )}
                   </div>

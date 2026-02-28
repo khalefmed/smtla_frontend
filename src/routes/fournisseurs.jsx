@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { useTranslation } from "react-i18next";
 import { 
   Search, Plus, Trash2, Edit3, Truck, 
-  Phone, Mail, MapPin, Globe, Building2
+  Phone, Mail, MapPin, Globe, Building2, Fingerprint
 } from 'lucide-react';
 import FournisseurModal from '@/components/ui/shared/fournisseurModal';
 
@@ -44,7 +44,7 @@ function Fournisseurs() {
       setShowModal(false);
       fetchData();
     } catch (error) { 
-    console.log(error);
+      console.log(error);
       toast.error(t("Erreur lors de l'enregistrement")); 
     }
   };
@@ -65,7 +65,8 @@ function Fournisseurs() {
     return liste.filter(f => 
       f.nom.toLowerCase().includes(q) || 
       f.email?.toLowerCase().includes(q) ||
-      f.telephone?.toLowerCase().includes(q)
+      f.telephone?.toLowerCase().includes(q) ||
+      f.nif?.toLowerCase().includes(q) // Recherche par NIF ajoutée
     );
   }, [liste, search]);
 
@@ -88,7 +89,7 @@ function Fournisseurs() {
         <Search className="absolute left-7 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
         <input
           type="text"
-          placeholder={t("Rechercher un fournisseur (Nom, Email, Tel)...")}
+          placeholder={t("Rechercher un fournisseur (Nom, NIF, Email, Tel)...")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full pl-12 pr-4 py-3 bg-inputFieldColor rounded-lg outline-none border border-transparent focus:border-buttonGradientPrimary"
@@ -113,18 +114,24 @@ function Fournisseurs() {
                 <tr key={f.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-indigo-50 rounded-full flex items-center justify-center text-buttonGradientSecondary font-bold">
+                      <div className="w-10 h-10 bg-indigo-50 rounded-full flex items-center justify-center text-buttonGradientSecondary font-bold shrink-0">
                         {f.nom.charAt(0)}
                       </div>
-                      <div>
-                        <div className="font-bold text-gray-900">{f.nom}</div>
-                        <div className="text-[10px] text-buttonGradientPrimary font-bold uppercase tracking-tighter italic">ID: {f.id}</div>
+                      <div className="flex flex-col gap-1">
+                        <div className="font-bold text-gray-900 leading-tight">{f.nom}</div>
+                        {f.nif ? (
+                           <div className="flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-100 w-fit">
+                             <Fingerprint className="w-3 h-3" /> NIF: {f.nif}
+                           </div>
+                        ) : (
+                          <div className="text-[10px] text-gray-400 italic">Aucun NIF renseigné</div>
+                        )}
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-col gap-1">
-                      <div className="text-sm flex items-center gap-2 text-gray-600">
+                      <div className="text-sm flex items-center gap-2 text-gray-600 font-medium">
                         <Phone className="w-3.5 h-3.5 text-gray-400" /> {f.telephone || "-"}
                       </div>
                       <div className="text-sm flex items-center gap-2 text-gray-600">
@@ -134,15 +141,16 @@ function Fournisseurs() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-sm text-gray-600 flex items-center gap-2">
-                      <MapPin className="w-3.5 h-3.5 text-gray-400" /> {f.adresse || t("Non renseignée")}
+                      <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" /> 
+                      <span className="truncate max-w-[200px]">{f.adresse || t("Non renseignée")}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex justify-center gap-2">
-                      <button onClick={() => { setSelectedFournisseur(f); setShowModal(true); }} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                      <button onClick={() => { setSelectedFournisseur(f); setShowModal(true); }} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title={t("Modifier")}>
                         <Edit3 className="w-4 h-4" />
                       </button>
-                      <button onClick={() => handleDelete(f.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                      <button onClick={() => handleDelete(f.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title={t("Supprimer")}>
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
