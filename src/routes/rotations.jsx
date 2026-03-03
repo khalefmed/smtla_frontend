@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { 
   Search, Plus, Package, Truck, Trash2, Ship,
   Edit3, ArrowDownCircle, ArrowUpCircle, Calendar, 
-  Hash, User, AlertCircle, ChevronRight, Boxes 
+  Hash, User, AlertCircle, ChevronRight, Boxes, CheckCircle, Loader2 
 } from 'lucide-react';
 import RotationModal from '@/components/ui/shared/rotationModal';
 
@@ -18,6 +18,7 @@ function Rotations() {
   
   // États d'interface
   const [loading, setLoading] = useState(true);
+  const [clotureLoading, setClotureLoading] = useState(false); // Loading spécifique pour la clôture
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState('entrantes'); // 'entrantes', 'sortantes', 'stock'
 
@@ -56,6 +57,22 @@ function Rotations() {
       toast.error(t("Erreur de chargement des stocks"));
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Nouvelle fonction pour clôturer TOUTES les rotations
+  const handleCloturerTout = async () => {
+    if (window.confirm(t("Voulez-vous vraiment marquer toutes les rotations comme terminées ?"))) {
+      try {
+        setClotureLoading(true);
+        await api.post("rotations/tout-terminer/");
+        toast.success(t("Toutes les rotations ont été terminées avec succès"));
+        fetchRotations(); // Rafraîchir la liste
+      } catch (error) {
+        toast.error(t("Erreur lors de la clôture des rotations"));
+      } finally {
+        setClotureLoading(false);
+      }
     }
   };
 
@@ -107,20 +124,38 @@ function Rotations() {
   return (
     <div className="flex flex-col gap-6 px-10 max-sm:px-4 py-6">
       
-      {/* HEADER : Titre & Bouton Ajouter */}
+      {/* HEADER : Titre & Boutons */}
       <div className="flex justify-between items-end">
         <div>
           <h1 className="font-bold text-2xl text-gray-900 tracking-tight">{t("Mouvements Logistiques")}</h1>
           <p className="text-gray-500 font-medium">{t("Gestion des flux et des stocks par client")}</p>
         </div>
+        
         {activeTab !== 'stock' && (
-          <button
-            onClick={() => { setSelectedRotation(null); setShowModal(true); }}
-            className="px-6 py-3 bg-buttonGradientSecondary text-white rounded-xl hover:bg-buttonGradientSecondary transition-all flex items-center gap-2 shadow-lg font-bold"
-          >
-            <Plus className="w-5 h-5" />
-            {activeTab === 'entrantes' ? t("Nouvelle Entrée") : t("Nouvelle Sortie")}
-          </button>
+          <div className="flex gap-3">
+            {/* BOUTON CLÔTURER TOUT */}
+            <button
+              onClick={handleCloturerTout}
+              disabled={clotureLoading}
+              className="px-6 py-3 border-2 border-green-500 text-green-600 rounded-xl hover:bg-green-50 transition-all flex items-center gap-2 font-bold disabled:opacity-50"
+            >
+              {clotureLoading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <CheckCircle className="w-5 h-5" />
+              )}
+              {t("Clôturer tout")}
+            </button>
+
+            {/* BOUTON AJOUTER */}
+            <button
+              onClick={() => { setSelectedRotation(null); setShowModal(true); }}
+              className="px-6 py-3 bg-buttonGradientSecondary text-white rounded-xl hover:opacity-90 transition-all flex items-center gap-2 shadow-lg font-bold"
+            >
+              <Plus className="w-5 h-5" />
+              {activeTab === 'entrantes' ? t("Nouvelle Entrée") : t("Nouvelle Sortie")}
+            </button>
+          </div>
         )}
       </div>
 
@@ -177,7 +212,6 @@ function Rotations() {
                   <th className="px-8 py-5">{t("Client")}</th>
                   <th className="px-6 py-5">{t("Type de Matériel")}</th>
                   <th className="px-6 py-5 text-center">{t("Quantité Disponible")}</th>
-                  {/* <th className="px-6 py-5 text-right">{t("Status")}</th> */}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -207,24 +241,13 @@ function Rotations() {
                               </span>
                             </div>
                           </td>
-                          {/* <td className="px-6 py-4 text-right">
-                            {type.quantite_disponible <= 5 ? (
-                              <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-orange-600 bg-orange-50 px-3 py-1.5 rounded-full border border-orange-100">
-                                <AlertCircle className="w-3.5 h-3.5" /> {t("STOCK FAIBLE")}
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
-                                {t("STABLE")}
-                              </span>
-                            )}
-                          </td> */}
                         </tr>
                       ))}
                     </Fragment>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="4" className="px-6 py-20 text-center text-gray-400 font-bold">{t("Aucun stock trouvé")}</td>
+                    <td colSpan="3" className="px-6 py-20 text-center text-gray-400 font-bold">{t("Aucun stock trouvé")}</td>
                   </tr>
                 )}
               </tbody>
@@ -248,6 +271,10 @@ function Rotations() {
                     <div className="flex items-center gap-2">
                       <h3 className="font-bold text-lg text-gray-900 uppercase tracking-tighter">{r.type_materiel_nom}</h3>
                       <span className="text-xs px-2 py-0.5 bg-gray-900 rounded font-bold text-white">QTY: {r.quantite}</span>
+                      {/* Badge de statut */}
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-black uppercase ${r.status === 'termine' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                        {r.status === 'termine' ? t("Terminé") : t("En cours")}
+                      </span>
                     </div>
                     <div className="flex flex-wrap items-center gap-x-6 gap-y-1 mt-1 text-sm text-gray-500 font-bold">
                       <span className="flex items-center gap-1 text-buttonGradientSecondary"><User className="w-4 h-4" /> {r.client_nom}</span>

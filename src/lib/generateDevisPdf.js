@@ -146,8 +146,28 @@ export const generateDevisPDF = async (facture, client) => {
   doc.text('BL NO', rightCol, yPos + 15);
   doc.setFont('helvetica', 'normal');
   doc.text(facture.bl || '', rightCol + 20, yPos + 15);
+
+  var yp = 0;
+
+  if (facture.eta != null) {
+    doc.setFont('helvetica', 'bold');
+    doc.text('ETA', rightCol, yPos + 20);
+    doc.setFont('helvetica', 'normal');
+    doc.text(facture.eta || '', rightCol + 20, yPos + 20);
+
+    yp += 5;
+  }
+
+  if (facture.eta != null) {
+    doc.setFont('helvetica', 'bold');
+    doc.text('ETD', rightCol, yPos + 25);
+    doc.setFont('helvetica', 'normal');
+    doc.text(facture.etd || '', rightCol + 20, yPos + 25);
+
+    yp += 5;
+  }
   
-  yPos += 25;
+  yPos += 25 + yp;
   
   // ============== TABLEAU DES ITEMS ==============
   const currencyLabel = facture.devise || 'MRU';

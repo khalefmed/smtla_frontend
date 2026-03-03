@@ -163,10 +163,10 @@ function Devis() {
   };
 
   const handleDownloadPDF = (devis) => {
-    if (devis.status !== 'valide') {
-      toast.error(t("Le PDF n'est disponible que pour les devis validés"));
-      return;
-    }
+    // if (devis.status !== 'valide') {
+    //   toast.error(t("Le PDF n'est disponible que pour les devis validés"));
+    //   return;
+    // }
     generateDevisPDF(devis);
   };
 
@@ -281,7 +281,7 @@ function Devis() {
                     {/* PDF : Uniquement si valide (via handleDownloadPDF) */}
                     <button 
                         onClick={() => handleDownloadPDF(devis)} 
-                        className={`p-2 rounded-lg transition-colors ${devis.status === 'valide' ? 'text-gray-600 hover:text-indigo-600 hover:bg-indigo-50' : 'text-gray-200 cursor-not-allowed'}`} 
+                        className={`p-2 rounded-lg transition-colors ${devis.status === 'valide' ? 'text-gray-600 hover:text-indigo-600 hover:bg-indigo-50' : 'text-gray-600 hover:text-indigo-600 hover:bg-indigo-50'}`} 
                         title="PDF"
                     >
                       <FileText className="w-5 h-5" />
