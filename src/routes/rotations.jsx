@@ -8,9 +8,11 @@ import {
   Hash, User, AlertCircle, ChevronRight, Boxes, CheckCircle, Loader2 
 } from 'lucide-react';
 import RotationModal from '@/components/ui/shared/rotationModal';
+import { getRole } from '@/lib/utils'; // Importation pour gérer les rôles
 
 function Rotations() {
   const { t } = useTranslation();
+  const role = getRole(); // Récupération du rôle actuel
   
   // États de données
   const [liste, setListe] = useState([]);
@@ -18,15 +20,14 @@ function Rotations() {
   
   // États d'interface
   const [loading, setLoading] = useState(true);
-  const [clotureLoading, setClotureLoading] = useState(false); // Loading spécifique pour la clôture
+  const [clotureLoading, setClotureLoading] = useState(false);
   const [search, setSearch] = useState("");
-  const [activeTab, setActiveTab] = useState('entrantes'); // 'entrantes', 'sortantes', 'stock'
+  const [activeTab, setActiveTab] = useState('entrantes');
 
   // États du Modal
   const [showModal, setShowModal] = useState(false);
   const [selectedRotation, setSelectedRotation] = useState(null);
 
-  // Chargement des données au changement d'onglet
   useEffect(() => {
     if (activeTab === 'stock') {
       fetchStocks();
@@ -60,14 +61,13 @@ function Rotations() {
     }
   };
 
-  // Nouvelle fonction pour clôturer TOUTES les rotations
   const handleCloturerTout = async () => {
     if (window.confirm(t("Voulez-vous vraiment marquer toutes les rotations comme terminées ?"))) {
       try {
         setClotureLoading(true);
         await api.post("rotations/tout-terminer/");
         toast.success(t("Toutes les rotations ont été terminées avec succès"));
-        fetchRotations(); // Rafraîchir la liste
+        fetchRotations();
       } catch (error) {
         toast.error(t("Erreur lors de la clôture des rotations"));
       } finally {
@@ -79,7 +79,6 @@ function Rotations() {
   const handleSave = async (formData) => {
     try {
       const endpoint = activeTab === 'entrantes' ? "rotations-entrantes/" : "rotations-sortantes/";
-      
       if (selectedRotation) {
         await api.put(`${endpoint}${selectedRotation.id}/`, formData);
         toast.success(t("Mise à jour réussie"));
@@ -87,32 +86,29 @@ function Rotations() {
         await api.post(endpoint, formData);
         toast.success(t("Rotation enregistrée"));
       }
-      
       setShowModal(false);
       fetchRotations();
     } catch (error) {
-      if (error.response?.data) {
-        const serverErrors = error.response.data;
-        if (serverErrors.quantite) {
-          toast.error(Array.isArray(serverErrors.quantite) ? serverErrors.quantite[0] : serverErrors.quantite, {
-            duration: 5000,
-            icon: <AlertCircle className="text-red-500" />
-          });
-        } else {
-          toast.error(t("Erreur lors de l'enregistrement"));
-        }
-      } else {
-        toast.error(t("Veuillez vérifier les champs"));
-      }
+      toast.error(t("Erreur lors de l'enregistrement"));
     }
   };
 
-  // Filtrage intelligent selon l'onglet
+  // Filtrage intelligent
   const filteredData = useMemo(() => {
     const q = search.toLowerCase();
+    
     if (activeTab === 'stock') {
-      return stocks.filter(s => s.client.toLowerCase().includes(q));
+      // 1. On filtre les clients par recherche
+      // 2. Pour chaque client, on ne garde que les types dont la quantité > 0
+      // 3. On ne garde le client que s'il lui reste au moins un type de matériel avec du stock
+      return stocks
+        .map(s => ({
+          ...s,
+          types: s.types.filter(t => t.quantite_disponible > 0)
+        }))
+        .filter(s => s.client.toLowerCase().includes(q) && s.types.length > 0);
     }
+
     return liste.filter((r) => 
       r.client_nom?.toLowerCase().includes(q) || 
       r.type_materiel_nom?.toLowerCase().includes(q) ||
@@ -124,7 +120,7 @@ function Rotations() {
   return (
     <div className="flex flex-col gap-6 px-10 max-sm:px-4 py-6">
       
-      {/* HEADER : Titre & Boutons */}
+      {/* HEADER */}
       <div className="flex justify-between items-end">
         <div>
           <h1 className="font-bold text-2xl text-gray-900 tracking-tight">{t("Mouvements Logistiques")}</h1>
@@ -133,21 +129,18 @@ function Rotations() {
         
         {activeTab !== 'stock' && (
           <div className="flex gap-3">
-            {/* BOUTON CLÔTURER TOUT */}
-            <button
-              onClick={handleCloturerTout}
-              disabled={clotureLoading}
-              className="px-6 py-3 border-2 border-green-500 text-green-600 rounded-xl hover:bg-green-50 transition-all flex items-center gap-2 font-bold disabled:opacity-50"
-            >
-              {clotureLoading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <CheckCircle className="w-5 h-5" />
-              )}
-              {t("Clôturer tout")}
-            </button>
+            {/* BOUTON CLÔTURER TOUT : Affiché seulement pour DG et DO */}
+            {(role === 'Directeur Général' || role === 'Directeur des Opérations') && (
+              <button
+                onClick={handleCloturerTout}
+                disabled={clotureLoading}
+                className="px-6 py-3 border-2 border-green-500 text-green-600 rounded-xl hover:bg-green-50 transition-all flex items-center gap-2 font-bold disabled:opacity-50"
+              >
+                {clotureLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle className="w-5 h-5" />}
+                {t("Clôturer tout")}
+              </button>
+            )}
 
-            {/* BOUTON AJOUTER */}
             <button
               onClick={() => { setSelectedRotation(null); setShowModal(true); }}
               className="px-6 py-3 bg-buttonGradientSecondary text-white rounded-xl hover:opacity-90 transition-all flex items-center gap-2 shadow-lg font-bold"
@@ -159,28 +152,16 @@ function Rotations() {
         )}
       </div>
 
-      {/* TABS : Entrées / Sorties / Stock */}
+      {/* TABS */}
       <div className="flex gap-2 p-1.5 bg-gray-100 w-fit rounded-2xl border border-gray-200">
-        <button
-          onClick={() => setActiveTab('entrantes')}
-          className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all ${activeTab === 'entrantes' ? "bg-white text-buttonGradientSecondary shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
-        >
-          <ArrowDownCircle className={`w-5 h-5 ${activeTab === 'entrantes' ? "text-green-500" : ""}`} />
-          {t("Entrées")}
+        <button onClick={() => setActiveTab('entrantes')} className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all ${activeTab === 'entrantes' ? "bg-white text-buttonGradientSecondary shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
+          <ArrowDownCircle className={`w-5 h-5 ${activeTab === 'entrantes' ? "text-green-500" : ""}`} /> {t("Entrées")}
         </button>
-        <button
-          onClick={() => setActiveTab('sortantes')}
-          className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all ${activeTab === 'sortantes' ? "bg-white text-buttonGradientSecondary shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
-        >
-          <ArrowUpCircle className={`w-5 h-5 ${activeTab === 'sortantes' ? "text-orange-500" : ""}`} />
-          {t("Sorties")}
+        <button onClick={() => setActiveTab('sortantes')} className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all ${activeTab === 'sortantes' ? "bg-white text-buttonGradientSecondary shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
+          <ArrowUpCircle className={`w-5 h-5 ${activeTab === 'sortantes' ? "text-orange-500" : ""}`} /> {t("Sorties")}
         </button>
-        <button
-          onClick={() => setActiveTab('stock')}
-          className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all ${activeTab === 'stock' ? "bg-white text-buttonGradientSecondary shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
-        >
-          <Boxes className={`w-5 h-5 ${activeTab === 'stock' ? "text-buttonGradientPrimary" : ""}`} />
-          {t("Stocks")}
+        <button onClick={() => setActiveTab('stock')} className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all ${activeTab === 'stock' ? "bg-white text-buttonGradientSecondary shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
+          <Boxes className={`w-5 h-5 ${activeTab === 'stock' ? "text-buttonGradientPrimary" : ""}`} /> {t("Stocks")}
         </button>
       </div>
 
@@ -196,14 +177,12 @@ function Rotations() {
         />
       </div>
 
-      {/* CONTENT AREA */}
+      {/* CONTENT */}
       {loading ? (
          <div className="flex justify-center py-20">
            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-buttonGradientSecondary"></div>
          </div>
       ) : activeTab === 'stock' ? (
-        
-        /* --- VUE TABLEAU DES STOCKS --- */
         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
@@ -235,33 +214,27 @@ function Rotations() {
                             </div>
                           </td>
                           <td className="px-6 py-4 text-center">
-                            <div className="flex flex-col items-center">
-                              <span className={`text-xl font-semibold ${type.quantite_disponible > 0 ? 'text-buttonGradientSecondary' : 'text-red-400'}`}>
-                                {type.quantite_disponible}
-                              </span>
-                            </div>
+                            <span className="text-xl font-semibold text-buttonGradientSecondary">
+                              {type.quantite_disponible}
+                            </span>
                           </td>
                         </tr>
                       ))}
                     </Fragment>
                   ))
                 ) : (
-                  <tr>
-                    <td colSpan="3" className="px-6 py-20 text-center text-gray-400 font-bold">{t("Aucun stock trouvé")}</td>
-                  </tr>
+                  <tr><td colSpan="3" className="px-6 py-20 text-center text-gray-400 font-bold">{t("Aucun stock disponible")}</td></tr>
                 )}
               </tbody>
             </table>
           </div>
         </div>
-
       ) : (
-
-        /* --- VUE LISTE ENTRÉES/SORTIES --- */
+        /* VUE LISTE (Même logique que précédemment) */
         <div className="grid grid-cols-1 gap-4">
           {filteredData.length > 0 ? (
             filteredData.map((r) => (
-              <div key={r.id} className="bg-white border border-gray-100 p-5 rounded-2xl flex items-center justify-between hover:shadow-md transition-all group border-l-4" 
+              <div key={r.id} className="bg-white border border-gray-100 p-5 rounded-2xl flex items-center justify-between hover:shadow-md transition-all border-l-4" 
                    style={{ borderLeftColor: activeTab === 'entrantes' ? '#22c55e' : '#f97316' }}>
                 <div className="flex items-center gap-5">
                   <div className={`p-4 rounded-xl ${activeTab === 'entrantes' ? "bg-green-50 text-green-600" : "bg-orange-50 text-orange-600"}`}>
@@ -271,34 +244,18 @@ function Rotations() {
                     <div className="flex items-center gap-2">
                       <h3 className="font-bold text-lg text-gray-900 uppercase tracking-tighter">{r.type_materiel_nom}</h3>
                       <span className="text-xs px-2 py-0.5 bg-gray-900 rounded font-bold text-white">QTY: {r.quantite}</span>
-                      {/* Badge de statut */}
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-black uppercase ${r.status === 'termine' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
-                        {r.status === 'termine' ? t("Terminé") : t("En cours")}
-                      </span>
                     </div>
                     <div className="flex flex-wrap items-center gap-x-6 gap-y-1 mt-1 text-sm text-gray-500 font-bold">
                       <span className="flex items-center gap-1 text-buttonGradientSecondary"><User className="w-4 h-4" /> {r.client_nom}</span>
-                      <span className="flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded text-buttonGradientPrimary">
-                        <Ship className="w-3.5 h-3.5" /> {r.navire}
-                      </span>
+                      <span className="flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded text-buttonGradientPrimary"><Ship className="w-3.5 h-3.5" /> {r.navire}</span>
                       <span className="flex items-center gap-1"><Hash className="w-4 h-4 text-gray-400" /> {r.numero_bordereau}</span>
-                      <span className="flex items-center gap-1"><Truck className="w-4 h-4 text-gray-400" /> {r.camion}</span>
-                      <span className="flex items-center gap-1 text-gray-400 font-medium italic">
-                        <Calendar className="w-4 h-4" /> 
-                        {new Date(activeTab === 'entrantes' ? r.date_arrivee : r.date_sortie).toLocaleDateString()}
-                      </span>
+                      <span className="flex items-center gap-1 text-gray-400 font-medium italic"><Calendar className="w-4 h-4" /> {new Date(activeTab === 'entrantes' ? r.date_arrivee : r.date_sortie).toLocaleDateString()}</span>
                     </div>
                   </div>
                 </div>
-
                 <div className="flex gap-2">
                   <button onClick={() => { setSelectedRotation(r); setShowModal(true); }} className="p-2.5 text-gray-400 hover:text-buttonGradientSecondary hover:bg-blue-50 rounded-xl transition-all"><Edit3 className="w-5 h-5" /></button>
-                  <button 
-                    onClick={() => { if(window.confirm(t('Supprimer ?'))) api.delete(`rotations-${activeTab}/${r.id}/`).then(() => fetchRotations()) }} 
-                    className="p-2.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
+                  <button onClick={() => { if(window.confirm(t('Supprimer ?'))) api.delete(`rotations-${activeTab}/${r.id}/`).then(() => fetchRotations()) }} className="p-2.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"><Trash2 className="w-5 h-5" /></button>
                 </div>
               </div>
             ))
@@ -308,15 +265,7 @@ function Rotations() {
         </div>
       )}
 
-      {/* MODAL DE SAISIE */}
-      {showModal && (
-        <RotationModal 
-          rotation={selectedRotation} 
-          type={activeTab} 
-          onClose={() => setShowModal(false)} 
-          onSave={handleSave} 
-        />
-      )}
+      {showModal && <RotationModal rotation={selectedRotation} type={activeTab} onClose={() => setShowModal(false)} onSave={handleSave} />}
     </div>
   );
 }

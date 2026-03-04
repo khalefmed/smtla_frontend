@@ -1,18 +1,16 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import logoImg from '@/assets/logo.png'; 
+import sigDO from '@/assets/signatures/directeur_operations.png';
 
 /**
  * Génère le Rapport Journalier (Daily Report) adapté aux Entrées/Sorties
- * @param {Object} reportData - Contient: date, dayNumber, nif, vessel, colonnes, lignes, totalDischarged, remainingOnBoard, mouvementType
  */
 export function generateDailyReportPdf(reportData) {
-    console.log("Génération du PDF avec les données :", reportData);
   const doc = new jsPDF('p', 'mm', 'a4'); 
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   
-  // Déterminer si c'est une sortie pour adapter les textes
   const isSortie = reportData.mouvementType === 'sorties';
   const actionText = isSortie ? 'OUT OF STOCK' : 'CARGO';
   const totalLabel = isSortie ? 'TOTAL OUT OF STOCK' : 'TOTAL DISCHARGING CARGO';
@@ -45,44 +43,35 @@ export function generateDailyReportPdf(reportData) {
   doc.setFontSize(18);
   doc.setTextColor(deepBlack[0], deepBlack[1], deepBlack[2]);
   doc.setFont('helvetica', 'bold');
-  // Titre dynamique selon le type
   const mainTitle = isSortie ? 'Daily Report - Out of Stock' : 'Daily Report - Inbound';
   doc.text(mainTitle, pageWidth / 2, 40, { align: 'center' });
 
   doc.setFontSize(12);
-  doc.setTextColor(smtlaBlue[0], smtlaBlue[1], smtlaBlue[2]);
-//   doc.text(`Day ${reportData.dayNumber || '7'}`, pageWidth / 2, 47, { align: 'center' }); 
-  
-  doc.setFont('helvetica', 'normal');
   doc.setTextColor(deepBlack[0], deepBlack[1], deepBlack[2]);
+  doc.setFont('helvetica', 'normal');
   doc.text(reportData.date || '', pageWidth / 2, 53, { align: 'center' });
 
   doc.setFontSize(9);
   doc.setTextColor(textGrey[0], textGrey[1], textGrey[2]);
   doc.text(`NIF: ${reportData.nif || '01328556'}`, 14, 60);
 
-  // --- 3. DÉTAILS DES MOUVEMENTS (LISTE PAR CLIENT) ---
+  // --- 3. DÉTAILS DES MOUVEMENTS ---
   let currentY = 75;
   const dayLine = reportData.lignes[0]; 
   const clients = reportData.colonnes;
 
   doc.setFontSize(11);
-
   clients.forEach((client, index) => {
     const detail = dayLine.clients[client] || 'No activity';
-    
-    // Nom du client en gras
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(deepBlack[0], deepBlack[1], deepBlack[2]);
     const label = `${index + 1}. ${client}: `;
     doc.text(label, 20, currentY);
     
-    // Détail et mention Out of stock / Loading en normal
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(textGrey[0], textGrey[1], textGrey[2]);
     const detailText = `${detail} ${actionText} ...`;
     doc.text(detailText, 25 + doc.getTextWidth(label), currentY);
-    
     currentY += 10;
   });
 
@@ -95,16 +84,35 @@ export function generateDailyReportPdf(reportData) {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
   doc.setTextColor(deepBlack[0], deepBlack[1], deepBlack[2]);
-  
-  // Total Cargo dynamique
   doc.text(`${totalLabel}: ${reportData.totalDischarged || '0'}`, 20, currentY); 
   currentY += 8;
-  
-  // Remaining On Board
   doc.setTextColor(smtlaBlue[0], smtlaBlue[1], smtlaBlue[2]);
   doc.text(`REMAINING ON BOARD: ${reportData.remainingOnBoard || '---'}`, 20, currentY); 
 
-  // --- 5. PIED DE PAGE ---
+  // --- 5. SECTION SIGNATURE AVEC IMAGE ---
+  const signatureY = pageHeight - 55; 
+  doc.setFontSize(10);
+  doc.setTextColor(deepBlack[0], deepBlack[1], deepBlack[2]);
+  doc.setFont('helvetica', 'bold');
+  
+  const signatureText = "Directeur des Opérations";
+  const signatureTextWidth = doc.getTextWidth(signatureText);
+  const signatureX = pageWidth - signatureTextWidth - 25;
+
+  doc.text(signatureText, signatureX, signatureY);
+
+  // Ajout de l'image de la signature
+  try {
+    // addImage(imageData, format, x, y, width, height)
+    // On ajuste la taille (ex: 40mm de large) et on centre sous le texte
+    doc.addImage(sigDO, 'PNG', signatureX, signatureY + 2, 40, 40);
+  } catch (e) {
+    console.warn("Signature DO manquante ou invalide");
+    // Ligne de secours si l'image ne charge pas
+    doc.line(signatureX, signatureY + 2, pageWidth - 25, signatureY + 2);
+  }
+
+  // --- 6. PIED DE PAGE ---
   const footerY = pageHeight - 15;
   doc.setFontSize(8);
   doc.setTextColor(textGrey[0], textGrey[1], textGrey[2]);
@@ -116,7 +124,6 @@ export function generateDailyReportPdf(reportData) {
   doc.text(footerLine1, pageWidth / 2, footerY, { align: 'center' });
   doc.text(footerLine2, pageWidth / 2, footerY + 5, { align: 'center' });
 
-  // Nom du fichier personnalisé
   const fileName = `Daily_Report_${reportData.mouvementType}_Day${reportData.dayNumber || ''}.pdf`;
   doc.save(fileName);
 }
