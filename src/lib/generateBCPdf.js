@@ -33,9 +33,9 @@ export const generateBCPDF = async (bc, fournisseur) => {
   yPos += 6;
   doc.text('Adresse : SOCO BMCI N°0190, Nouakchott, Mauritanie', 14, yPos);
   yPos += 6;
-  doc.text('Téléphone : 26 31 98 31 / 31 31 98 31', 14, yPos);
+  doc.text('Téléphone : 24 34 40 10 - 24 34 40 10', 14, yPos);
   yPos += 6;
-  doc.text('E-mail : contact@smtla-mr.com', 14, yPos);
+  doc.text('E-mail : infos@smtla-sa.com', 14, yPos);
 
   yPos += 10;
   doc.setFont('helvetica', 'bold');

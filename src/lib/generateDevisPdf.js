@@ -130,22 +130,22 @@ export const generateDevisPDF = async (facture, client) => {
   doc.setFont('helvetica', 'bold');
   doc.text('Port d\'arrivée :', leftCol, yPos + 15);
   doc.setFont('helvetica', 'normal');
-  doc.text(facture.port_arrive || '', leftCol + 25, yPos + 15);
+  doc.text(facture.port_arrive || '---', leftCol + 25, yPos + 15);
   
   doc.setFont('helvetica', 'bold');
   doc.text('Vessel', rightCol, yPos + 5);
   doc.setFont('helvetica', 'normal');
-  doc.text(facture.vessel || '', rightCol + 20, yPos + 5);
+  doc.text(facture.vessel || '---', rightCol + 20, yPos + 5);
   
   doc.setFont('helvetica', 'bold');
   doc.text('Voyage', rightCol, yPos + 10);
   doc.setFont('helvetica', 'normal');
-  doc.text(facture.voyage || '', rightCol + 20, yPos + 10);
+  doc.text(facture.voyage || '---', rightCol + 20, yPos + 10);
   
   doc.setFont('helvetica', 'bold');
   doc.text('BL NO', rightCol, yPos + 15);
   doc.setFont('helvetica', 'normal');
-  doc.text(facture.bl || '', rightCol + 20, yPos + 15);
+  doc.text(facture.bl || '---', rightCol + 20, yPos + 15);
 
   var yp = 0;
 
@@ -153,7 +153,7 @@ export const generateDevisPDF = async (facture, client) => {
     doc.setFont('helvetica', 'bold');
     doc.text('ETA', rightCol, yPos + 20);
     doc.setFont('helvetica', 'normal');
-    doc.text(facture.eta || '', rightCol + 20, yPos + 20);
+    doc.text(facture.eta || '---', rightCol + 20, yPos + 20);
 
     yp += 5;
   }
@@ -162,7 +162,7 @@ export const generateDevisPDF = async (facture, client) => {
     doc.setFont('helvetica', 'bold');
     doc.text('ETD', rightCol, yPos + 25);
     doc.setFont('helvetica', 'normal');
-    doc.text(facture.etd || '', rightCol + 20, yPos + 25);
+    doc.text(facture.etd || '---', rightCol + 20, yPos + 25);
 
     yp += 5;
   }

@@ -33,19 +33,24 @@ function DevisPreviewModal({ devis, onClose }) {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
             <div>
               <p className="text-[10px] font-bold text-gray-400 uppercase">Navire</p>
-              <p className="font-bold text-sm flex items-center gap-1"><Ship className="w-3 h-3 text-indigo-500"/> {devis.vessel}</p>
+              <p className="font-bold text-sm flex items-center gap-1">
+                <Ship className="w-3 h-3 text-indigo-500"/> {devis.vessel || '---'}
+              </p>
             </div>
             <div>
               <p className="text-[10px] font-bold text-gray-400 uppercase">Voyage</p>
-              <p className="font-bold text-sm">{devis.voyage}</p>
+              <p className="font-bold text-sm">{devis.voyage || '---'}</p>
             </div>
             <div>
               <p className="text-[10px] font-bold text-gray-400 uppercase">ETA</p>
-              <p className="font-bold text-sm flex items-center gap-1"><Calendar className="w-3 h-3 text-indigo-500"/> {new Date(devis.eta).toLocaleDateString()}</p>
+              <p className="font-bold text-sm flex items-center gap-1">
+                <Calendar className="w-3 h-3 text-indigo-500"/> 
+                {devis.eta ? new Date(devis.eta).toLocaleDateString() : '---'}
+              </p>
             </div>
             <div>
               <p className="text-[10px] font-bold text-gray-400 uppercase">Port</p>
-              <p className="font-bold text-sm">{devis.port_arrive}</p>
+              <p className="font-bold text-sm">{devis.port_arrive || '---'}</p>
             </div>
           </div>
 
@@ -124,16 +129,31 @@ function Devis() {
 
   const handleSave = async (formData) => {
     try {
+      const dataToSend = { ...formData };
+      if (!formData.eta || formData.eta === "") {
+        dataToSend.eta = null;
+      } else {
+        dataToSend.eta = new Date(formData.eta).toISOString();
+      }
+
+      if (!formData.etd || formData.etd === "") {
+        dataToSend.etd = null;
+      } else {
+        dataToSend.etd = new Date(formData.etd).toISOString();
+      }
       if (selectedDevis) {
-        await api.put(`devis/${selectedDevis.id}/`, formData);
+        await api.put(`devis/${selectedDevis.id}/`, dataToSend);
         toast.success(t("Devis mis à jour"));
       } else {
-        await api.post('devis/', formData);
+        await api.post('devis/', dataToSend);
         toast.success(t("Devis créé avec succès"));
       }
       setShowModal(false);
       fetchData();
-    } catch (error) { toast.error(t("Erreur lors de l'enregistrement")); }
+    } catch (error) { 
+      console.log(error);
+      toast.error(t("Erreur lors de l'enregistrement")); 
+    }
   };
 
   const handleValidate = async (id, status) => {
@@ -244,10 +264,11 @@ function Devis() {
                 </td>
                 <td className="px-6 py-4">
                   <div className="font-bold text-gray-800 flex items-center gap-1">
-                    <Anchor className="w-3.5 h-3.5 text-indigo-400"/> {devis.vessel}
+                    <Anchor className="w-3.5 h-3.5 text-indigo-400"/> {devis.vessel || '---'}
                   </div>
                   <div className="text-[11px] font-bold text-gray-400 mt-1 uppercase">
-                    ETA: {new Date(devis.eta).toLocaleDateString()}
+                    {/* Vérification si eta existe avant de créer l'objet Date */}
+                    ETA: {devis.eta ? new Date(devis.eta).toLocaleDateString() : '---'}
                   </div>
                 </td>
                 <td className="px-6 py-4 text-right">
