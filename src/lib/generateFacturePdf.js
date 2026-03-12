@@ -51,12 +51,9 @@ const numberToFrenchWords = (num) => {
   return words.charAt(0).toUpperCase() + words.slice(1);
 };
 
-export const generateFacturePDF = async (facture, client) => {
+export const generateFacturePDF = async (facture) => {
   const doc = new jsPDF();
 
-
-  console.log("Génération PDF pour la facture :", facture);
-  
   // Couleurs personnalisées
   const blueHeader = [15, 117, 188]; 
   const lightBlue = [15, 117, 188]; 
@@ -97,7 +94,7 @@ export const generateFacturePDF = async (facture, client) => {
   yPos += 10;
   doc.setTextColor(0, 0, 0);
   doc.setFont('helvetica', 'normal');
-  doc.text(facture.reference, 142, yPos + 3);
+  doc.text(facture.reference || '', 142, yPos + 3);
   const invoiceDate = facture.date_creation ? new Date(facture.date_creation).toLocaleDateString('fr-FR') : new Date().toLocaleDateString('fr-FR');
   doc.text(invoiceDate, 175, yPos + 3);
   
@@ -111,7 +108,7 @@ export const generateFacturePDF = async (facture, client) => {
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.text('FACTURER À', 16, yPos + 5);
-  doc.text('RÉF CLIENT', 107, yPos + 5);
+  doc.text('RÉF LOGISTIQUE', 107, yPos + 5);
   
   yPos += 7;
   doc.setTextColor(0, 0, 0);
@@ -123,55 +120,55 @@ export const generateFacturePDF = async (facture, client) => {
   doc.setFont('helvetica', 'bold');
   doc.text('Client :', leftCol, yPos + 5);
   doc.setFont('helvetica', 'normal');
-  doc.text(facture.client?.nom || facture.client_nom || '', leftCol + 15, yPos + 5);
+  doc.text(facture.client?.nom || facture.client_nom || '---', leftCol + 15, yPos + 5);
   
   doc.setFont('helvetica', 'bold');
   doc.text('NIF', leftCol, yPos + 10);
   doc.setFont('helvetica', 'normal');
-  doc.text(facture.client?.nif || '', leftCol + 15, yPos + 10);
+  doc.text(facture.client?.nif || '---', leftCol + 15, yPos + 10);
   
   doc.setFont('helvetica', 'bold');
   doc.text('Adresse', leftCol, yPos + 15);
   doc.setFont('helvetica', 'normal');
-  doc.text(facture.client?.adresse || '', leftCol + 15, yPos + 15);
+  doc.text(facture.client?.adresse || '---', leftCol + 15, yPos + 15);
   
   doc.setFont('helvetica', 'bold');
   doc.text('Tel', leftCol, yPos + 20);
   doc.setFont('helvetica', 'normal');
-  doc.text(facture.client?.telephone || '', leftCol + 15, yPos + 20);
+  doc.text(facture.client?.telephone || '---', leftCol + 15, yPos + 20);
   
   doc.setFont('helvetica', 'bold');
   doc.text('Email :', leftCol, yPos + 25);
   doc.setFont('helvetica', 'normal');
-  doc.text(facture.client?.email || '', leftCol + 15, yPos + 25);
+  doc.text(facture.client?.email || '---', leftCol + 15, yPos + 25);
   
   doc.setFont('helvetica', 'bold');
-  doc.text('Vessel', rightCol, yPos + 5);
+  doc.text('Navire', rightCol, yPos + 5);
   doc.setFont('helvetica', 'normal');
-  doc.text(facture.vessel || '', rightCol + 20, yPos + 5);
+  doc.text(facture.vessel || '---', rightCol + 20, yPos + 5);
   
   doc.setFont('helvetica', 'bold');
   doc.text('Voyage', rightCol, yPos + 10);
   doc.setFont('helvetica', 'normal');
-  doc.text(facture.voyage || '', rightCol + 20, yPos + 10);
+  doc.text(facture.voyage || '---', rightCol + 20, yPos + 10);
   
   doc.setFont('helvetica', 'bold');
   doc.text('BL NO', rightCol, yPos + 15);
   doc.setFont('helvetica', 'normal');
-  doc.text(facture.bl || '', rightCol + 20, yPos + 15);
+  doc.text(facture.bl || '---', rightCol + 20, yPos + 15);
   
   yPos += 38;
   
   // ============== TABLEAU ==============
   const currencyLabel = facture.devise || 'MRU';
-  const tableData = facture.items.map(item => [
+  const tableData = (facture.items || []).map(item => [
     item.libelle,
     item.quantite,
     `${Number(item.prix_unitaire).toLocaleString()} ${currencyLabel}`,
-    `${Number(item.montant_total).toLocaleString()} ${currencyLabel}`
+    `${(Number(item.quantite) * Number(item.prix_unitaire)).toLocaleString()} ${currencyLabel}`
   ]);
   
-  const subtotal = facture.items.reduce((sum, item) => sum + Number(item.montant_total || 0), 0);
+  const subtotal = (facture.items || []).reduce((sum, item) => sum + (Number(item.prix_unitaire) * Number(item.quantite) || 0), 0);
   const taxeRate = facture.tva ? 0.16 : 0;
   const taxe = subtotal * taxeRate;
   const total = subtotal + taxe;
@@ -216,23 +213,19 @@ export const generateFacturePDF = async (facture, client) => {
   doc.text('Service d\'exploitation', 30, yPos);
   doc.text('Service Financier', 140, yPos);
   
-  // Affichage dynamique de la signature sous "Service d'exploitation"
-  if (facture.status === 'valide') {
+  if (facture.status === 'valide' && facture.valideur) {
     let signatureImg = null;
     switch (facture.valideur.type) {
       case 'directeur_general': signatureImg = sigDG; break;
       case 'directeur_operations': signatureImg = sigDO; break;
       case 'comptable': signatureImg = sigComptable; break;
-      // default: signatureImg = sigDG; break;
     }
 
     if (signatureImg) {
-      // Placement de la signature (X, Y, Largeur, Hauteur)
       doc.addImage(signatureImg, 'PNG', 25, yPos + 1, 45, 45);
     }
   }
   
-  // Lignes pour signature manuelle ou tampon
   doc.setDrawColor(200, 200, 200);
   doc.line(20, yPos + 22, 80, yPos + 22); 
   doc.line(130, yPos + 22, 190, yPos + 22);
@@ -246,10 +239,29 @@ export const generateFacturePDF = async (facture, client) => {
   doc.setFont('helvetica', 'normal');
   doc.text('Banque : BMCI | IBAN : MR1300010000010485740015102 | SWIFT : MBICMRMRXXX', 14, yPos + 5);
   
+  // ============== INFOS CRÉATION (MODIFIÉ) ==============
+  yPos += 15;
+  doc.setFontSize(8);
+  doc.setTextColor(120, 120, 120);
+  doc.setFont('helvetica', 'italic');
+
+
+  console.log(facture)
+  
+  const createur = facture.createur.prenom + ' ' + facture.createur.nom || 'Système';
+  const now = new Date(facture.date_creation || Date.now());
+  const dateGen = now.toLocaleString('fr-FR', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
+
+  doc.text(`Facture établie par : ${createur}`, 14, yPos);
+  doc.text(`Document généré le : ${dateGen}`, 14, yPos + 4);
+
   // ============== PIED DE PAGE ==============
   const pageHeight = doc.internal.pageSize.height;
   doc.setFontSize(7);
-  doc.setFont('helvetica', 'italic');
+  doc.setTextColor(150, 150, 150);
   doc.text('Siège social : SOCO BMCI N°0190 Moughata de Tevragh Zeina - Nouakchott - Mauritanie', 105, pageHeight - 10, { align: 'center' });
   
   doc.save(`${facture.reference}.pdf`);

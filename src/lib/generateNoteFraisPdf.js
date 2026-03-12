@@ -7,14 +7,15 @@ import signatureComptable from '@/assets/signatures/comptable.png';
 export function generateNoteFraisPdf(note) {
   const doc = new jsPDF('p', 'mm', 'a4');
   const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
   
   const orangeFill = [248, 192, 80];
   const lightBlueFill = [222, 235, 247];
   const blackText = [0, 0, 0];
 
-  // --- 1. CALCULS (Utilisation des champs du Serializer) ---
+  // --- 1. CALCULS ---
   const sommeItems = note.items?.reduce((acc, curr) => acc + Number(curr.montant || 0), 0) || 0;
-  const tvaFacteur = note.tva ? 0.16 : 0; // note.tva vient de expression_besoin.tva via le serializer
+  const tvaFacteur = note.tva ? 0.16 : 0; 
   const montantHT = sommeItems;
   const montantTVA = sommeItems * tvaFacteur;
   const montantTTC = montantHT + montantTVA;
@@ -35,20 +36,18 @@ export function generateNoteFraisPdf(note) {
   doc.setFont('helvetica', 'normal');
   doc.text(`Réf: ${note.reference || ''}`, pageWidth - 14, 25, { align: 'right' }); 
   
-  // Référence de l'EB source juste en dessous
   doc.setFontSize(8);
   doc.text(`EB Source: ${note.expression_besoin_reference || 'N/A'}`, pageWidth - 14, 30, { align: 'right' });
 
-  // --- 3. BLOCS INFOS (SYSTÈME MIROIR) ---
+  // --- 3. BLOCS INFOS ---
   const startYInfos = 35;
 
-  // Tableau GAUCHE : Origine
   autoTable(doc, {
     startY: startYInfos,
     margin: { right: 110 },
     body: [
       ['Date Note', dateFormatted],
-      ['Demandeur', note.createur_nom || 'Non précisé'], // Utilise le créateur de la note
+      ['Demandeur', note.createur_nom || 'Non précisé'],
       ['Statut', note.status_display || 'En attente'],
       ['Référence EB', note.expression_besoin_reference || '-']
     ],
@@ -57,7 +56,6 @@ export function generateNoteFraisPdf(note) {
     columnStyles: { 0: { fontStyle: 'bold', cellWidth: 30, fillColor: [245, 245, 245] } }
   });
 
-  // Tableau DROITE : Logistique (Champs directs du serializer)
   autoTable(doc, {
     startY: startYInfos,
     margin: { left: 110 },
@@ -99,7 +97,7 @@ export function generateNoteFraisPdf(note) {
     }
   });
 
-  // --- 5. RÉCAPITULATIF FINANCIER (6 colonnes) ---
+  // --- 5. RÉCAPITULATIF FINANCIER ---
   autoTable(doc, {
     startY: doc.lastAutoTable.finalY + 10,
     body: [
@@ -107,7 +105,7 @@ export function generateNoteFraisPdf(note) {
       ['1000 XOF', '1 USD', '1 EURO', 'MRU', 'TVA 16%', `${montantTVA > 0 ? montantTVA.toLocaleString() : '-'} ${note.devise || 'MRU'}`],
       [
         note.devise === 'XOF' ? '1' : '', 
-        note.devise === 'DOLLAR' ? '1' : '', // 'DOLLAR' selon votre modèle Django
+        note.devise === 'DOLLAR' ? '1' : '', 
         note.devise === 'EUR' ? '1' : '', 
         '1', 
         'MONTANT TTC', 
@@ -124,12 +122,12 @@ export function generateNoteFraisPdf(note) {
 
   // --- 6. SIGNATURES ---
   autoTable(doc, {
-    startY: doc.internal.pageSize.getHeight() - 70, 
+    startY: pageHeight - 75, 
     head: [['DIRECTEUR GÉNÉRAL', 'FINANCE / COMPTABILITÉ', 'BÉNÉFICIAIRE']],
     body: [['', '', '']], 
     theme: 'grid',
     styles: { 
-      minCellHeight: 30, 
+      minCellHeight: 25, 
       halign: 'center', 
       valign: 'middle',
       fontSize: 9, 
@@ -137,11 +135,12 @@ export function generateNoteFraisPdf(note) {
     },
     headStyles: { 
       fillColor: [245, 245, 245], 
+      textColor: blackText,
       minCellHeight: 8 
     },
     didDrawCell: (data) => {
       if (note.status === 'valide' && data.section === 'body') {
-        const imgSize = 25;
+        const imgSize = 22;
         const posX = data.cell.x + (data.cell.width / 2) - (imgSize / 2);
         const posY = data.cell.y + (data.cell.height / 2) - (imgSize / 2);
 
@@ -155,6 +154,34 @@ export function generateNoteFraisPdf(note) {
       }
     }
   });
+
+  // --- 7. TRAÇABILITÉ & PIED DE PAGE (VOTRE MODIFICATION) ---
+  const yTrace = pageHeight - 25;
+  doc.setFontSize(8);
+  doc.setTextColor(120, 120, 120);
+  doc.setFont('helvetica', 'italic');
+
+
+  console.log(note);
+
+  // Logique de créateur personnalisée
+  const createur = (note.createur?.prenom && note.createur?.nom) 
+    ? note.createur.prenom + ' ' + note.createur.nom 
+    : 'Système';
+
+  const now = new Date(note.date_creation || Date.now());
+  const dateGen = now.toLocaleString('fr-FR', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
+
+  doc.text(`Note établie par : ${createur}`, 14, yTrace);
+  doc.text(`Document généré le : ${dateGen}`, 14, yTrace + 4);
+
+  // Pied de page
+  doc.setFontSize(7);
+  doc.setTextColor(150, 150, 150);
+  doc.text('Siège social : SOCO BMCI N°0190 Moughata de Tevragh Zeina - Nouakchott - Mauritanie', pageWidth / 2, pageHeight - 10, { align: 'center' });
 
   doc.save(`NoteFrais_${note.reference}.pdf`);
 }

@@ -10,6 +10,8 @@ import sigComptable from '@/assets/signatures/comptable.png';
 
 export const generateBCPDF = async (bc, fournisseur) => {
   const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
 
   console.log("Génération PDF pour le bon de commande :", bc);
   
@@ -55,13 +57,13 @@ export const generateBCPDF = async (bc, fournisseur) => {
   doc.setFont('helvetica', 'normal');
   yPos += 8;
 
-  doc.text(`Raison sociale : ${bc.fournisseur.nom || '...........................................'}`, 14, yPos);
+  doc.text(`Raison sociale : ${bc.fournisseur?.nom || '...........................................'}`, 14, yPos);
   yPos += 6;
-  doc.text(`Adresse : ${bc.fournisseur.adresse || '...................................................'}`, 14, yPos);
+  doc.text(`Adresse : ${bc.fournisseur?.adresse || '...................................................'}`, 14, yPos);
   yPos += 6;
-  doc.text(`Téléphone : ${bc.fournisseur.telephone || '...........................................'}`, 14, yPos);
+  doc.text(`Téléphone : ${bc.fournisseur?.telephone || '...........................................'}`, 14, yPos);
   yPos += 6;
-  doc.text(`E-mail : ${bc.fournisseur.email || '......................................................'}`, 14, yPos);
+  doc.text(`E-mail : ${bc.fournisseur?.email || '......................................................'}`, 14, yPos);
 
   yPos += 15;
 
@@ -124,15 +126,12 @@ export const generateBCPDF = async (bc, fournisseur) => {
     styles: { lineColor: [0, 0, 0], lineWidth: 0.1, fontSize: 10 }
   });
 
-  // RÉCUPÉRATION DE LA POSITION POUR LE CACHET DANS LE TABLEAU
+  // Ajout du cachet automatique
   const finalYTable = doc.lastAutoTable.finalY;
-  const stampY = finalYTable - 40; // On remonte un peu à l'intérieur de la cellule de signature
+  const stampY = finalYTable - 40;
 
-  // Ajout du cachet automatique pour SMTLA si le bon est validé
-  if (bc.status === 'valide') {
-    console.log(bc.valideur.type)
+  if (bc.status === 'valide' && bc.valideur) {
     let signatureImg = null;
-    // On utilise bc.valideur.type selon votre correction précédente
     const userType = bc.valideur.type;
 
     switch (userType) {
@@ -142,11 +141,33 @@ export const generateBCPDF = async (bc, fournisseur) => {
     }
 
     if (signatureImg) {
-      // Placement à gauche (sous Pour SMTLA)
-      // X: 25, Y: stampY, Largeur: 40, Hauteur: 40
       doc.addImage(signatureImg, 'PNG', 35, stampY, 50, 50);
     }
   }
+
+  // ============== 7. TRAÇABILITÉ (VOTRE MODIFICATION) ==============
+  const yTrace = pageHeight - 25;
+  doc.setFontSize(8);
+  doc.setTextColor(120, 120, 120);
+  doc.setFont('helvetica', 'italic');
+
+  const createur = (bc.createur?.prenom && bc.createur?.nom) 
+    ? bc.createur.prenom + ' ' + bc.createur.nom 
+    : 'Système';
+
+  const now = new Date(bc.date_creation || Date.now());
+  const dateGen = now.toLocaleString('fr-FR', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
+
+  doc.text(`BC établi par : ${createur}`, 14, yTrace);
+  doc.text(`Document généré le : ${dateGen}`, 14, yTrace + 4);
+
+  // ============== 8. PIED DE PAGE ==============
+  doc.setFontSize(7);
+  doc.setTextColor(150, 150, 150);
+  doc.text('Siège social : SOCO BMCI N°0190 Moughata de Tevragh Zeina - Nouakchott - Mauritanie', pageWidth / 2, pageHeight - 10, { align: 'center' });
 
   // Sauvegarder
   doc.save(`BC_${bc.reference || 'PROVISOIRE'}.pdf`);

@@ -7,6 +7,7 @@ import signatureComptable from '@/assets/signatures/comptable.png';
 export function generateEbPdf(eb) {
   const doc = new jsPDF('p', 'mm', 'a4');
   const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
   
   const orangeFill = [248, 192, 80];
   const lightBlueFill = [222, 235, 247];
@@ -41,7 +42,7 @@ export function generateEbPdf(eb) {
   // Tableau GAUCHE : Origine
   autoTable(doc, {
     startY: startYInfos,
-    margin: { right: 110 }, // On laisse de la place à droite
+    margin: { right: 110 },
     body: [
       ['Date', dateFormatted],
       ['Demandeur', eb.nom_demandeur || '-'],
@@ -56,7 +57,7 @@ export function generateEbPdf(eb) {
   // Tableau DROITE : Logistique
   autoTable(doc, {
     startY: startYInfos,
-    margin: { left: 110 }, // On commence après le milieu
+    margin: { left: 110 },
     body: [
       ['BL / AWB', eb.bl_awb || '-'],
       ['Navire', eb.navire || '-'],
@@ -82,7 +83,7 @@ export function generateEbPdf(eb) {
   ]);
 
   autoTable(doc, {
-    startY: doc.lastAutoTable.finalY + 10, // Se base sur le dernier tableau d'infos
+    startY: doc.lastAutoTable.finalY + 10,
     head: tableHead,
     body: tableBody,
     theme: 'grid',
@@ -95,7 +96,7 @@ export function generateEbPdf(eb) {
     }
   });
 
-  // --- 5. RÉCAPITULATIF RATE OF BCM (6 colonnes) ---
+  // --- 5. RÉCAPITULATIF RATE OF BCM ---
   autoTable(doc, {
     startY: doc.lastAutoTable.finalY + 10,
     body: [
@@ -120,12 +121,12 @@ export function generateEbPdf(eb) {
 
   // --- 6. SIGNATURES ---
   autoTable(doc, {
-    startY: doc.internal.pageSize.getHeight() - 70, 
+    startY: pageHeight - 75, 
     head: [['DIRECTEUR GÉNÉRAL', 'FINANCE / COMPTABILITÉ', 'BÉNÉFICIAIRE']],
     body: [['', '', '']], 
     theme: 'grid',
     styles: { 
-      minCellHeight: 30, 
+      minCellHeight: 25, 
       halign: 'center', 
       valign: 'middle',
       fontSize: 9, 
@@ -139,8 +140,8 @@ export function generateEbPdf(eb) {
     },
     didDrawCell: (data) => {
       if (eb.status === 'valide' && data.section === 'body') {
-        const imgWidth = 25;
-        const imgHeight = 25;
+        const imgWidth = 22;
+        const imgHeight = 22;
         const posX = data.cell.x + (data.cell.width / 2) - (imgWidth / 2);
         const posY = data.cell.y + (data.cell.height / 2) - (imgHeight / 2);
 
@@ -154,6 +155,33 @@ export function generateEbPdf(eb) {
       }
     }
   });
+
+  // --- 7. INFOS CRÉATION & PIED DE PAGE (MODIFIÉ) ---
+  const yTrace = pageHeight - 25;
+  doc.setFontSize(8);
+  doc.setTextColor(120, 120, 120);
+  doc.setFont('helvetica', 'italic');
+
+  console.log(eb);
+
+  // Utilisation de votre logique de nom complet
+  const createur = (eb.createur?.prenom && eb.createur?.nom) 
+    ? `${eb.createur.prenom} ${eb.createur.nom}` 
+    : 'Système';
+    
+  const now = new Date(eb.date_creation || Date.now());
+  const dateGen = now.toLocaleString('fr-FR', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
+
+  doc.text(`Document établi par : ${createur}`, 14, yTrace);
+  doc.text(`Document généré le : ${dateGen}`, 14, yTrace + 4);
+
+  // Pied de page fixe
+  doc.setFontSize(7);
+  doc.setTextColor(150, 150, 150);
+  doc.text('Siège social : SOCO BMCI N°0190 Moughata de Tevragh Zeina - Nouakchott - Mauritanie', pageWidth / 2, pageHeight - 10, { align: 'center' });
 
   doc.save(`EB_${eb.reference || 'Export'}.pdf`);
 }

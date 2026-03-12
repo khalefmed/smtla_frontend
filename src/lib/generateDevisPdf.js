@@ -94,7 +94,7 @@ export const generateDevisPDF = async (facture, client) => {
   yPos += 10;
   doc.setTextColor(0, 0, 0);
   doc.setFont('helvetica', 'normal');
-  doc.text(facture.reference, 142, yPos + 3);
+  doc.text(facture.reference || '', 142, yPos + 3);
   const invoiceDate = facture.date_creation ? new Date(facture.date_creation).toLocaleDateString('fr-FR') : new Date().toLocaleDateString('fr-FR');
   doc.text(invoiceDate, 175, yPos + 3);
   
@@ -120,12 +120,12 @@ export const generateDevisPDF = async (facture, client) => {
   doc.setFont('helvetica', 'bold');
   doc.text('Client :', leftCol, yPos + 5);
   doc.setFont('helvetica', 'normal');
-  doc.text(facture.client?.nom || facture.client_nom || '', leftCol + 15, yPos + 5);
+  doc.text(facture.client?.nom || facture.client_nom || '---', leftCol + 15, yPos + 5);
   
   doc.setFont('helvetica', 'bold');
   doc.text('NIF', leftCol, yPos + 10);
   doc.setFont('helvetica', 'normal');
-  doc.text(facture.client?.nif || '', leftCol + 15, yPos + 10);
+  doc.text(facture.client?.nif || '---', leftCol + 15, yPos + 10);
   
   doc.setFont('helvetica', 'bold');
   doc.text('Port d\'arrivée :', leftCol, yPos + 15);
@@ -154,16 +154,14 @@ export const generateDevisPDF = async (facture, client) => {
     doc.text('ETA', rightCol, yPos + 20);
     doc.setFont('helvetica', 'normal');
     doc.text(facture.eta || '---', rightCol + 20, yPos + 20);
-
     yp += 5;
   }
 
-  if (facture.eta != null) {
+  if (facture.etd != null) {
     doc.setFont('helvetica', 'bold');
     doc.text('ETD', rightCol, yPos + 25);
     doc.setFont('helvetica', 'normal');
     doc.text(facture.etd || '---', rightCol + 20, yPos + 25);
-
     yp += 5;
   }
   
@@ -171,14 +169,14 @@ export const generateDevisPDF = async (facture, client) => {
   
   // ============== TABLEAU DES ITEMS ==============
   const currencyLabel = facture.devise || 'MRU';
-  const tableData = facture.items.map(item => [
+  const tableData = (facture.items || []).map(item => [
     item.libelle,
     item.quantite,
     `${Number(item.prix_unitaire).toLocaleString()} ${currencyLabel}`,
     `${Number(item.montant_total).toLocaleString()} ${currencyLabel}`
   ]);
   
-  const subtotal = facture.items.reduce((sum, item) => sum + Number(item.montant_total || 0), 0);
+  const subtotal = (facture.items || []).reduce((sum, item) => sum + Number(item.montant_total || 0), 0);
   const taxeRate = facture.tva ? 0.16 : 0;
   const taxe = subtotal * taxeRate;
   const total = subtotal + taxe;
@@ -223,17 +221,15 @@ export const generateDevisPDF = async (facture, client) => {
   doc.text('Service d\'exploitation', 30, yPos);
   doc.text('Service Financier', 140, yPos);
   
-  // Ajout du cachet automatique si validé
   if (facture.status === 'valide') {
     let signatureImg = null;
-    switch (facture.valideur.type) {
+    switch (facture.valideur?.type) {
       case 'directeur_general': signatureImg = sigDG; break;
       case 'directeur_operations': signatureImg = sigDO; break;
       case 'comptable': signatureImg = sigComptable; break;
     }
 
     if (signatureImg) {
-      // Signature placée sous "Service d'exploitation"
       doc.addImage(signatureImg, 'PNG', 25, yPos, 45, 45);
     }
   }
@@ -244,12 +240,34 @@ export const generateDevisPDF = async (facture, client) => {
   
   yPos += 60;
   
+  // ============== INFOS CRÉATION (AJOUTÉ) ==============
+  doc.setFontSize(8);
+  doc.setTextColor(120, 120, 120);
+  doc.setFont('helvetica', 'italic');
+  
+  // Logique du créateur basée sur votre changement
+  const createur = (facture.createur?.prenom && facture.createur?.nom) 
+    ? `${facture.createur.prenom} ${facture.createur.nom}` 
+    : 'Système';
+    
+  const now = new Date(facture.date_creation || Date.now());
+  const dateGen = now.toLocaleString('fr-FR', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
+
+  doc.text(`Devis établi par : ${createur}`, 14, yPos);
+  doc.text(`Document généré le : ${dateGen}`, 14, yPos + 4);
+
+  yPos += 12;
+
   // ============== PIED DE PAGE ==============
   const pageHeight = doc.internal.pageSize.height;
   doc.setFontSize(7);
   doc.setFont('helvetica', 'italic');
   doc.text('EXCULDING: ALL CUSTOMS DUTIES AND TAXES', 14, yPos);
   
+  doc.setTextColor(150, 150, 150);
   doc.text('Siège social : SOCO BMCI N°0190 Moughata de Tevragh Zeina - Nouakchott - Mauritanie', 105, pageHeight - 10, { align: 'center' });
   doc.text('Tél : 26 31 98 31 / 31 31 98 31 | NIF : 01328566', 105, pageHeight - 6, { align: 'center' });
   
