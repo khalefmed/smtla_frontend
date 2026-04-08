@@ -4,13 +4,25 @@ import logo from '@/assets/logo.png';
 import signatureDG from '@/assets/signatures/directeur_general.png';
 import signatureComptable from '@/assets/signatures/comptable.png';
 
+/**
+ * Formatage manuel des nombres pour garantir un espace standard 
+ * comme séparateur de milliers et éviter l'erreur du caractère "/".
+ */
+const formatPrix = (valeur) => {
+  if (valeur === undefined || valeur === null || isNaN(valeur)) return '0,00';
+  const num = Number(valeur);
+  let [entier, decimal] = num.toFixed(2).split('.');
+  // Utilise un espace standard (Unicode \u0020) pour les milliers
+  entier = entier.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  return `${entier},${decimal}`;
+};
+
 export function generateNoteFraisPdf(note) {
   const doc = new jsPDF('p', 'mm', 'a4');
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   
   const orangeFill = [248, 192, 80];
-  const lightBlueFill = [222, 235, 247];
   const blackText = [0, 0, 0];
 
   // --- 1. CALCULS ---
@@ -71,16 +83,17 @@ export function generateNoteFraisPdf(note) {
   });
 
   // --- 4. TABLEAU DES ITEMS ---
+  const currencyLabel = note.devise || 'MRU';
   const tableHead = [['Désignation', 'Type', 'Montant']];
   const tableBody = note.items?.map(item => [
     item.libelle || '',
     item.type ? item.type.charAt(0).toUpperCase() + item.type.slice(1) : 'Equipement',
-    `${Number(item.montant).toLocaleString()} ${note.devise || 'MRU'}`
+    `${formatPrix(item.montant)} ${currencyLabel}`
   ]) || [];
 
   tableBody.push([
     { content: 'TOTAL NOTE', colSpan: 2, styles: { halign: 'right', fontStyle: 'bold', fillColor: orangeFill } },
-    { content: `${montantHT.toLocaleString()} ${note.devise || 'MRU'}`, styles: { fontStyle: 'bold', fillColor: orangeFill } }
+    { content: `${formatPrix(montantHT)} ${currencyLabel}`, styles: { fontStyle: 'bold', fillColor: orangeFill } }
   ]);
 
   autoTable(doc, {
@@ -101,15 +114,15 @@ export function generateNoteFraisPdf(note) {
   autoTable(doc, {
     startY: doc.lastAutoTable.finalY + 10,
     body: [
-      ['RATE OF BCM', '', '', '', 'MONTANT HT', `${montantHT.toLocaleString()} ${note.devise || 'MRU'}`],
-      ['1000 XOF', '1 USD', '1 EURO', 'MRU', 'TVA 16%', `${montantTVA > 0 ? montantTVA.toLocaleString() : '-'} ${note.devise || 'MRU'}`],
+      ['RATE OF BCM', '', '', '', 'MONTANT HT', `${formatPrix(montantHT)} ${currencyLabel}`],
+      ['1000 XOF', '1 USD', '1 EURO', 'MRU', 'TVA 16%', `${montantTVA > 0 ? formatPrix(montantTVA) : '-'} ${currencyLabel}`],
       [
         note.devise === 'XOF' ? '1' : '', 
         note.devise === 'DOLLAR' ? '1' : '', 
         note.devise === 'EUR' ? '1' : '', 
         '1', 
         'MONTANT TTC', 
-        `${montantTTC.toLocaleString()} ${note.devise || 'MRU'}`
+        `${formatPrix(montantTTC)} ${currencyLabel}`
       ]
     ],
     theme: 'grid',
@@ -126,18 +139,8 @@ export function generateNoteFraisPdf(note) {
     head: [['DIRECTEUR GÉNÉRAL', 'FINANCE / COMPTABILITÉ', 'BÉNÉFICIAIRE']],
     body: [['', '', '']], 
     theme: 'grid',
-    styles: { 
-      minCellHeight: 25, 
-      halign: 'center', 
-      valign: 'middle',
-      fontSize: 9, 
-      fontStyle: 'bold' 
-    },
-    headStyles: { 
-      fillColor: [245, 245, 245], 
-      textColor: blackText,
-      minCellHeight: 8 
-    },
+    styles: { minCellHeight: 25, halign: 'center', valign: 'middle', fontSize: 9, fontStyle: 'bold' },
+    headStyles: { fillColor: [245, 245, 245], textColor: blackText, minCellHeight: 8 },
     didDrawCell: (data) => {
       if (note.status === 'valide' && data.section === 'body') {
         const imgSize = 22;
@@ -155,16 +158,12 @@ export function generateNoteFraisPdf(note) {
     }
   });
 
-  // --- 7. TRAÇABILITÉ & PIED DE PAGE (VOTRE MODIFICATION) ---
+  // --- 7. TRAÇABILITÉ & PIED DE PAGE ---
   const yTrace = pageHeight - 25;
   doc.setFontSize(8);
   doc.setTextColor(120, 120, 120);
   doc.setFont('helvetica', 'italic');
 
-
-  console.log(note);
-
-  // Logique de créateur personnalisée
   const createur = (note.createur?.prenom && note.createur?.nom) 
     ? note.createur.prenom + ' ' + note.createur.nom 
     : 'Système';
@@ -178,7 +177,6 @@ export function generateNoteFraisPdf(note) {
   doc.text(`Note établie par : ${createur}`, 14, yTrace);
   doc.text(`Document généré le : ${dateGen}`, 14, yTrace + 4);
 
-  // Pied de page
   doc.setFontSize(7);
   doc.setTextColor(150, 150, 150);
   doc.text('Siège social : SOCO BMCI N°0190 Moughata de Tevragh Zeina - Nouakchott - Mauritanie', pageWidth / 2, pageHeight - 10, { align: 'center' });

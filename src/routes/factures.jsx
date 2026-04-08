@@ -4,20 +4,17 @@ import toast from 'react-hot-toast';
 import { useTranslation } from "react-i18next";
 import {
   Search, Plus, FileCheck, Trash2, Edit3,
-  Anchor, User, FileStack, FileText, EyeOff, XCircle, Eye, Ship, Calendar
+  Anchor, User, FileStack, FileText, EyeOff, XCircle, Eye, Ship, Calendar, Box, Weight, Info
 } from 'lucide-react';
 import FactureModal from '@/components/ui/shared/factureModal';
 import ImportDevisModal from '@/components/ui/shared/importDevisModal';
 import { generateFacturePDF } from '@/lib/generateFacturePdf';
-import { getRole, getUserData } from '@/lib/utils';
+import { getRole } from '@/lib/utils';
 
-// --- COMPOSANT DE VUE DÉTAILLÉE (PREVIEW) ---
-// --- COMPOSANT DE VUE DÉTAILLÉE (PREVIEW) MODIFIÉ ---
+// --- COMPOSANT DE VUE DÉTAILLÉE (PREVIEW) MIS À JOUR ---
 function FacturePreviewModal({ facture, onClose }) {
   if (!facture) return null;
 
-  // Sécurité pour le nom du client
-  // On cherche d'abord dans l'objet imbriqué, sinon dans la propriété client_nom
   const nomClient = facture.client?.nom || facture.client_nom || "Client inconnu";
 
   return (
@@ -28,7 +25,6 @@ function FacturePreviewModal({ facture, onClose }) {
             <h2 className="text-lg font-bold flex items-center gap-2">
               <FileText className="w-5 h-5 text-amber-400" /> {facture.reference}
             </h2>
-            {/* Utilisation du nom sécurisé ici */}
             <p className="text-xs opacity-70 uppercase font-bold tracking-widest">{nomClient}</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
@@ -37,20 +33,50 @@ function FacturePreviewModal({ facture, onClose }) {
         </div>
         
         <div className="p-8 space-y-6 overflow-y-auto max-h-[75vh]">
-          {/* ... reste du code identique ... */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-5 bg-gray-50 rounded-2xl border border-gray-100">
+          {/* Section Logistique Étendue */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-5 bg-gray-50 rounded-2xl border border-gray-100">
             <div>
-              <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Navire / Vessel</p>
-              <p className="font-bold text-sm flex items-center gap-1"><Ship className="w-3 h-3 text-amber-600"/> {facture.vessel}</p>
+              <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Navire / Type</p>
+              <p className="font-bold text-sm flex items-center gap-1">
+                <Ship className="w-3 h-3 text-amber-600"/> {facture.vessel || '---'}
+              </p>
+              {facture.type && <p className="text-[10px] text-amber-700 font-bold uppercase">{facture.type}</p>}
             </div>
             <div>
-              <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Bill of Lading</p>
-              <p className="font-bold text-sm">{facture.bl || "-"}</p>
+              <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Volume / Poids</p>
+              <div className="flex flex-col gap-0.5">
+                <p className="font-bold text-[11px] flex items-center gap-1"><Box className="w-2.5 h-2.5 text-gray-400"/> {facture.volume || '---'}</p>
+                <p className="font-bold text-[11px] flex items-center gap-1"><Weight className="w-2.5 h-2.5 text-gray-400"/> {facture.poids || '---'}</p>
+              </div>
             </div>
             <div>
-              <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Voyage</p>
-              <p className="font-bold text-sm">{facture.voyage || "-"}</p>
+              <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Détails Voyage</p>
+              <p className="font-bold text-[11px]">BL: {facture.bl || '---'}</p>
+              <p className="font-bold text-[11px]">Voy: {facture.voyage || '---'}</p>
             </div>
+            <div>
+              <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Port</p>
+              <p className="font-bold text-sm text-gray-700">{facture.port_arrive || '---'}</p>
+            </div>
+          </div>
+
+          {/* Description & Commentaire Interne */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {facture.description && (
+              <div className="flex gap-2 p-1">
+                <Info className="w-4 h-4 text-amber-500 shrink-0 mt-0.5"/>
+                <div>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase">Description Cargaison</p>
+                  <p className="text-xs text-gray-700 italic leading-relaxed">{facture.description}</p>
+                </div>
+              </div>
+            )}
+            {facture.commentaire && (
+              <div className="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100">
+                <p className="text-[10px] font-bold text-indigo-800 uppercase mb-1 flex items-center gap-1">Note Interne</p>
+                <p className="text-xs text-indigo-900 leading-tight">{facture.commentaire}</p>
+              </div>
+            )}
           </div>
 
           {/* Table Items */}
@@ -105,7 +131,6 @@ function Factures() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
-  // Modals
   const [showFactureModal, setShowFactureModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
@@ -115,8 +140,8 @@ function Factures() {
 
   useEffect(() => { fetchData(); }, []);
 
-  const peutValider = ["Directeur des Opérations", "Comptable", "Directeur Général"].includes(currentRole);
-  const peutSupprimer = ["Directeur des Opérations", "Directeur Général"].includes(currentRole);
+  const peutValider = ["Comptable", "Directeur Général"].includes(currentRole);
+  const peutSupprimer = ["Directeur Général"].includes(currentRole);
 
   const peutModifier = (facture) => {
     if (facture.status === 'valide') return ["Comptable", "Directeur Général"].includes(currentRole);
@@ -145,7 +170,6 @@ function Factures() {
       setShowFactureModal(false);
       fetchData();
     } catch (error) { 
-      console.error(error)
       toast.error(t("Erreur lors de l'enregistrement")); 
     }
   };
@@ -167,7 +191,6 @@ function Factures() {
     } catch (error) { toast.error(t("Erreur lors de la suppression")); }
   };
 
-  // --- LOGIQUE PDF RESTREINTE ---
   const handleDownloadPDF = (facture) => {
     if (facture.status !== 'valide') {
       toast.error(t("Le PDF n'est disponible que pour les factures validées"));
@@ -180,7 +203,7 @@ function Factures() {
     const q = search.toLowerCase();
     return liste.filter(f =>
       f.reference?.toLowerCase().includes(q) ||
-      f.client_nom?.toLowerCase().includes(q) ||
+      (f.client?.nom || f.client_nom)?.toLowerCase().includes(q) ||
       f.vessel?.toLowerCase().includes(q)
     );
   }, [liste, search]);
@@ -222,7 +245,7 @@ function Factures() {
           placeholder={t("Rechercher une facture (réf, client, navire)...")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-12 pr-4 py-3 bg-gray-50 rounded-lg outline-none border border-transparent focus:border-buttonGradientPrimary"
+          className="w-full pl-12 pr-4 py-3 bg-gray-50 rounded-lg outline-none border border-transparent focus:border-buttonGradientPrimary font-medium"
         />
       </div>
 
@@ -249,12 +272,14 @@ function Factures() {
                       <StatusBadge status={f.status} />
                     </div>
                     <div className="text-sm font-bold text-gray-700 flex items-center gap-1">
-                      <User className="w-3 h-3 text-gray-400"/> {f.client.nom}
+                      <User className="w-3 h-3 text-gray-400"/> {f.client?.nom || f.client_nom}
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-sm font-bold flex items-center gap-2 text-gray-800"><Anchor className="w-4 h-4 text-indigo-400" /> {f.vessel}</div>
-                    <div className="text-[11px] font-bold text-gray-400 mt-1 uppercase">BL: {f.bl} | Voyage: {f.voyage}</div>
+                    <div className="text-sm font-bold flex items-center gap-2 text-gray-800">
+                        <Anchor className="w-4 h-4 text-indigo-400" /> {f.vessel || '---'}
+                    </div>
+                    <div className="text-[11px] font-bold text-gray-400 mt-1 uppercase">BL: {f.bl || '---'} | Voy: {f.voyage || '---'}</div>
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="font-bold text-lg text-gray-900">{Number(f.montant_total).toLocaleString()}</div>
@@ -264,23 +289,21 @@ function Factures() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex justify-center gap-1">
-                      {/* OEIL : Preview */}
                       <button onClick={() => { setSelectedFacture(f); setShowPreview(true); }} className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
                         <Eye className="w-5 h-5" />
                       </button>
 
                       {peutValider && f.status === 'attente' && (
                         <>
-                          <button onClick={() => handleValidate(f.id, 'valide')} className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Valider">
+                          <button onClick={() => handleValidate(f.id, 'valide')} className="p-2 text-green-600 hover:bg-green-50 rounded-lg" title="Valider">
                             <FileCheck className="w-5 h-5" />
                           </button>
-                          <button onClick={() => handleValidate(f.id, 'rejete')} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Rejeter">
+                          <button onClick={() => handleValidate(f.id, 'rejete')} className="p-2 text-red-600 hover:bg-red-50 rounded-lg" title="Rejeter">
                             <XCircle className="w-5 h-5" />
                           </button>
                         </>
                       )}
                       
-                      {/* PDF : Uniquement si Valide */}
                       <button 
                         onClick={() => handleDownloadPDF(f)} 
                         className={`p-2 rounded-lg transition-colors ${f.status === 'valide' ? 'text-gray-600 hover:text-buttonGradientSecondary hover:bg-indigo-50' : 'text-gray-200 cursor-not-allowed'}`}
@@ -290,14 +313,13 @@ function Factures() {
                       </button>
 
                       {peutModifier(f) && (
-                        <button onClick={() => { setSelectedFacture(f); setShowFactureModal(true); }} className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" title="Modifier">
+                        <button onClick={() => { setSelectedFacture(f); setShowFactureModal(true); }} className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg" title="Modifier">
                           <Edit3 className="w-5 h-5" />
                         </button>
                       )}
 
-                      {/* SUPPRESSION : Interdite si la facture est validée */}
                       {peutSupprimer && f.status !== 'valide' && (
-                        <button onClick={() => handleDelete(f.id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Supprimer">
+                        <button onClick={() => handleDelete(f.id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg" title="Supprimer">
                           <Trash2 className="w-5 h-5" />
                         </button>
                       )}

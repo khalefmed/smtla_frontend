@@ -37,6 +37,7 @@ import BonsCommande from "./routes/bon_commande";
 import Rotations from "./routes/rotations";
 import { BAD } from "./routes/bad";
 import Rapports from "./routes/rapport";
+import PDA from "./routes/pda";
 
 
 
@@ -80,6 +81,10 @@ const router = createBrowserRouter([
       {
         path: "/bad",
         element: <ProtectedRoute component={BAD} />,
+      },
+      {
+        path: "/pda",
+        element: <ProtectedRoute component={PDA} />,
       },
       {
         path: "/groupes",

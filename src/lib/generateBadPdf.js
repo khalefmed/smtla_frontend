@@ -8,14 +8,26 @@ import sigDG from '@/assets/signatures/directeur_general.png';
 import sigDO from '@/assets/signatures/directeur_operations.png';
 import sigComptable from '@/assets/signatures/comptable.png';
 
+/**
+ * Formatage manuel pour éviter l'erreur du caractère "/" à la place de l'espace
+ * et garantir un affichage propre des poids et montants.
+ */
+const formatNombre = (valeur) => {
+  if (valeur === undefined || valeur === null || isNaN(valeur)) return '0,00';
+  const num = Number(valeur);
+  let [entier, decimal] = num.toFixed(2).split('.');
+  entier = entier.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  return `${entier},${decimal}`;
+};
+
 export const generateBadPDF = async (bad, client) => {
   console.log("Génération PDF pour le bon de livraison :", bad);
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.width;
 
   // Configuration des styles
-  const mainBlue = [31, 73, 125]; // Bleu foncé SMTLA
-  const lightBlue = [70, 107, 143]; // Bleu acier pour les titres
+  const mainBlue = [31, 73, 125]; 
+  const lightBlue = [70, 107, 143]; 
   const textDark = [44, 62, 80];
 
   let yPos = 15;
@@ -26,7 +38,7 @@ export const generateBadPDF = async (bad, client) => {
   try {
     doc.addImage(logo, 'PNG', 14, yPos, logoWidth, logoHeight);
   } catch (e) {
-    console.warn("Logo non chargé, espace réservé");
+    console.warn("Logo non chargé");
   }
 
   doc.setFontSize(40);
@@ -56,12 +68,12 @@ export const generateBadPDF = async (bad, client) => {
   yPos += 5;
   doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
-  doc.text('SOCIETE MAURITANIENNE DE MANUTENTION TRANSPORT,.....', 14, yPos);
+  doc.text('SOCIETE MAURITANIENNE DE MANUTENTION TRANSPORT LOGISTIQUE ET AFFRETEMENT', 14, yPos);
   doc.setFont('helvetica', 'bold');
   doc.text(`BAD N° : ${bad.reference || 'N/A'} - ${bad.navire || ''}`, 196, yPos, { align: 'right' });
 
   yPos += 5;
-  doc.text('SOCO CITE PLAGE 190 - TEL +222243440001 - +22237818387', 14, yPos);
+  doc.text('SOCO CITE PLAGE 190 - TEL +222 43440001 - +222 37818387', 14, yPos);
   doc.text(`Référence client : ${client?.nom || bad.client_nom || 'CLIENT'}`, 196, yPos, { align: 'right' });
 
   yPos += 5;
@@ -82,34 +94,33 @@ export const generateBadPDF = async (bad, client) => {
   yPos += 5;
   doc.text(`Adresse : ${client?.adresse || 'Nouakchott'}`, 35, yPos);
   yPos += 5;
-  doc.text('Code postal, Ville', 35, yPos);
-  yPos += 5;
   doc.text(`Téléphone : ${client?.telephone || ''}`, 35, yPos);
 
   const xFacture = 120;
-  let yFacture = yPos - 20;
+  let yFacture = yPos - 15;
   
   doc.setFont('helvetica', 'bold');
   doc.text('N° facture payée', xFacture, yFacture);
   doc.setFont('helvetica', 'normal');
-  doc.text(`${bad.facture_ref || '000/'}`, 170, yFacture);
+  doc.text(`${bad.facture_ref || '---'}`, 170, yFacture);
   
   yFacture += 10;
   doc.setFont('helvetica', 'bold');
   doc.text('PAYMENT FACTURE', xFacture, yFacture);
   doc.text(bad.facture_ref ? 'YES' : 'NO', 175, yFacture);
 
-  yPos += 15;
+  yPos += 20;
 
   // ============== TABLEAU DES ITEMS ==============
   const tableData = bad.items?.map((item, index) => [
     index + 1,
     item.bl,
     item.package_number,
-    item.weight
+    formatNombre(item.weight) // Utilisation du formateur robuste pour le poids
   ]) || [];
 
-  while (tableData.length < 12) {
+  // Remplissage lignes vides pour l'esthétique
+  while (tableData.length < 10) {
     tableData.push(['', '', '', '']);
   }
 
@@ -120,17 +131,19 @@ export const generateBadPDF = async (bad, client) => {
     theme: 'grid',
     headStyles: { fillColor: lightBlue, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },
     bodyStyles: { fontSize: 8, minCellHeight: 8, textColor: [0, 0, 0] },
-    columnStyles: { 0: { cellWidth: 15, halign: 'center' }, 1: { cellWidth: 85 }, 2: { cellWidth: 40, halign: 'center' }, 3: { cellWidth: 42, halign: 'center' } }
+    columnStyles: { 
+      0: { cellWidth: 15, halign: 'center' }, 
+      1: { cellWidth: 85 }, 
+      2: { cellWidth: 40, halign: 'center' }, 
+      3: { cellWidth: 42, halign: 'right' } 
+    }
   });
 
   yPos = doc.lastAutoTable.finalY + 15;
 
   // ============== SIGNATURE & CACHET ==============
-  
-  // Positionnement du cachet si validé
-  if (bad.status != 'valide') {
+  if (bad.status === 'valide') {
     let signatureImg = null;
-    // On utilise la structure corrigée : bad.valideur.type
     const userType = bad.valideur?.type;
 
     switch (userType) {
@@ -141,9 +154,7 @@ export const generateBadPDF = async (bad, client) => {
     }
 
     if (signatureImg) {
-      // Centré horizontalement sur la zone de signature
-      // X: (pageWidth/2) - (largeur/2)
-      doc.addImage(signatureImg, 'PNG', (pageWidth / 1.3) - 22.5, yPos - 5, 45, 45);
+      doc.addImage(signatureImg, 'PNG', (pageWidth / 1.3) - 22.5, yPos - 10, 45, 45);
     }
   }
 
@@ -152,7 +163,7 @@ export const generateBadPDF = async (bad, client) => {
   doc.setTextColor(...textDark);
   doc.text('SMTLA-SA', pageWidth / 2, yPos + 10, { align: 'center' });
   
-  yPos += 25; // On descend pour laisser de la place au cachet
+  yPos += 30; 
   
   doc.setFontSize(11);
   doc.text('Nous vous remercions de votre confiance !', pageWidth / 2, yPos, { align: 'center' });

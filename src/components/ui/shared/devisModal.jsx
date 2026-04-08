@@ -1,33 +1,45 @@
 import { useState, useEffect } from 'react';
-import { X, Plus, Trash2, Ship, ListPlus, Anchor, Calendar } from 'lucide-react';
+import { X, Trash2, Ship, ListPlus, Calendar, Box, Weight, Info, Database } from 'lucide-react';
 
 function DevisModal({ devis, clients, onClose, onSave }) {
   const [formData, setFormData] = useState({
     client_id: '',
     port_arrive: '',
     vessel: '',
+    type: '',
+    description: '',
+    volume: '',
+    poids: '',
     voyage: '',
     eta: '',
     etd: '',
     bl: '',
     tva: false,
     devise: 'MRU',
+    remarks: '',
+    commentaire: '',
     items: [{ libelle: '', prix_unitaire: '', quantite: 1 }]
   });
 
   useEffect(() => {
     if (devis) {
       setFormData({
-        client_id: devis.client.id,
-        port_arrive: devis.port_arrive,
-        vessel: devis.vessel,
-        voyage: devis.voyage,
+        client_id: devis.client?.id || '',
+        port_arrive: devis.port_arrive || '',
+        vessel: devis.vessel || '',
+        type: devis.type || '',
+        description: devis.description || '',
+        volume: devis.volume || '',
+        poids: devis.poids || '',
+        voyage: devis.voyage || '',
         eta: devis.eta?.slice(0, 16) || '',
         etd: devis.etd?.slice(0, 16) || '',
-        bl: devis.bl,
-        tva: devis.tva,
+        bl: devis.bl || '',
+        tva: devis.tva || false,
         devise: devis.devise || 'MRU',
-        items: devis.items.map(i => ({ libelle: i.libelle, prix_unitaire: i.prix_unitaire, quantite: i.quantite }))
+        // remarks: devis.remarks || '',
+        commentaire: devis.commentaire || '',
+        items: devis.items?.map(i => ({ libelle: i.libelle, prix_unitaire: i.prix_unitaire, quantite: i.quantite })) || [{ libelle: '', prix_unitaire: '', quantite: 1 }]
       });
     }
   }, [devis]);
@@ -55,59 +67,94 @@ function DevisModal({ devis, clients, onClose, onSave }) {
         </div>
 
         <form onSubmit={(e) => { e.preventDefault(); onSave(formData); }} className="overflow-y-auto p-8 space-y-8">
+          {/* Section 1: Identité */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase text-gray-400">Client</label>
-              <select required value={formData.client_id} onChange={(e) => setFormData({...formData, client_id: e.target.value})} className="w-full p-3 bg-gray-50 border rounded-xl outline-buttonGradientPrimary">
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase text-gray-400">Client</label>
+              <select required value={formData.client_id} onChange={(e) => setFormData({...formData, client_id: e.target.value})} className="w-full p-3 bg-gray-50 border rounded-xl outline-buttonGradientPrimary text-sm font-bold">
                 <option value="">Sélectionner un client</option>
                 {clients?.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
               </select>
             </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase text-gray-400">Navire (Vessel)</label>
-              <div className="relative">
-                <Ship className="absolute left-3 top-3.5 w-4 h-4 text-gray-400" />
-                <input required type="text" value={formData.vessel} onChange={(e) => setFormData({...formData, vessel: e.target.value})} className="w-full pl-10 p-3 bg-gray-50 border rounded-xl outline-buttonGradientPrimary" placeholder="Nom du navire" />
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase text-gray-400">Navire / Type</label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Ship className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                  <input required type="text" value={formData.vessel} onChange={(e) => setFormData({...formData, vessel: e.target.value})} className="w-full pl-9 p-2.5 bg-gray-50 border rounded-xl outline-buttonGradientPrimary text-sm font-bold" placeholder="Nom" />
+                </div>
+                <input type="text" value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value})} className="w-24 p-2.5 bg-gray-50 border rounded-xl outline-buttonGradientPrimary text-sm font-bold" placeholder="Type" />
               </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase text-gray-400">Bill of Lading (BL)</label>
-              <input required type="text" value={formData.bl} onChange={(e) => setFormData({...formData, bl: e.target.value})} className="w-full p-3 bg-gray-50 border rounded-xl outline-buttonGradientPrimary" />
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase text-gray-400">Bill of Lading (BL)</label>
+              <input required type="text" value={formData.bl} onChange={(e) => setFormData({...formData, bl: e.target.value})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-buttonGradientPrimary text-sm font-bold" />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-indigo-50 p-4 rounded-2xl">
-            <div><label className="text-[10px] font-bold text-buttonGradientSecondary uppercase">Port d'arrivée</label><input required type="text" value={formData.port_arrive} onChange={(e) => setFormData({...formData, port_arrive: e.target.value})} className="w-full p-2 bg-white border rounded-lg" /></div>
-            <div><label className="text-[10px] font-bold text-buttonGradientSecondary uppercase">Voyage</label><input required type="text" value={formData.voyage} onChange={(e) => setFormData({...formData, voyage: e.target.value})} className="w-full p-2 bg-white border rounded-lg" /></div>
-            <div><label className="text-[10px] font-bold text-buttonGradientSecondary uppercase flex items-center gap-1"><Calendar className="w-3 h-3"/> ETA</label><input required type="datetime-local" value={formData.eta} onChange={(e) => setFormData({...formData, eta: e.target.value})} className="w-full p-2 bg-white border rounded-lg" /></div>
-            <div><label className="text-[10px] font-bold text-buttonGradientSecondary uppercase flex items-center gap-1"><Calendar className="w-3 h-3"/> ETD</label><input required type="datetime-local" value={formData.etd} onChange={(e) => setFormData({...formData, etd: e.target.value})} className="w-full p-2 bg-white border rounded-lg" /></div>
+          {/* Section 2: Logistique & Marchandise */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1"><Box className="w-3 h-3"/> Volume (CBM)</label>
+              <input type="text" value={formData.volume} onChange={(e) => setFormData({...formData, volume: e.target.value})} className="w-full p-2 bg-white border rounded-lg text-sm" placeholder="Ex: 450 m3" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1"><Weight className="w-3 h-3"/> Poids (MT)</label>
+              <input type="text" value={formData.poids} onChange={(e) => setFormData({...formData, poids: e.target.value})} className="w-full p-2 bg-white border rounded-lg text-sm" placeholder="Ex: 1200 Tons" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1"><Info className="w-3 h-3"/> Description Cargaison</label>
+              <input type="text" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} className="w-full p-2 bg-white border rounded-lg text-sm" placeholder="Ex: Conteneurs 40'..." />
+            </div>
           </div>
 
+          {/* Section 3: Escales */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100">
+            <div><label className="text-[10px] font-bold text-buttonGradientSecondary uppercase">Port d'arrivée</label><input required type="text" value={formData.port_arrive} onChange={(e) => setFormData({...formData, port_arrive: e.target.value})} className="w-full p-2 bg-white border rounded-lg text-sm" /></div>
+            <div><label className="text-[10px] font-bold text-buttonGradientSecondary uppercase">Voyage</label><input required type="text" value={formData.voyage} onChange={(e) => setFormData({...formData, voyage: e.target.value})} className="w-full p-2 bg-white border rounded-lg text-sm" /></div>
+            <div><label className="text-[10px] font-bold text-buttonGradientSecondary uppercase flex items-center gap-1"><Calendar className="w-3 h-3"/> ETA</label><input required type="datetime-local" value={formData.eta} onChange={(e) => setFormData({...formData, eta: e.target.value})} className="w-full p-2 bg-white border rounded-lg text-sm" /></div>
+            <div><label className="text-[10px] font-bold text-buttonGradientSecondary uppercase flex items-center gap-1"><Calendar className="w-3 h-3"/> ETD</label><input required type="datetime-local" value={formData.etd} onChange={(e) => setFormData({...formData, etd: e.target.value})} className="w-full p-2 bg-white border rounded-lg text-sm" /></div>
+          </div>
+
+          {/* Section 4: Prestations */}
           <div className="space-y-4">
             <div className="flex justify-between items-center border-b pb-2">
-              <h3 className="font-bold text-gray-800 flex items-center gap-2"><ListPlus className="w-5 h-5 text-buttonGradientSecondary"/> Prestations / Services</h3>
-              <button type="button" onClick={addItem} className="text-sm font-bold text-buttonGradientSecondary hover:bg-indigo-50 px-3 py-1 rounded-lg">+ Ajouter une ligne</button>
+              <h3 className="font-bold text-gray-800 flex items-center gap-2 text-sm uppercase"><ListPlus className="w-4 h-4 text-buttonGradientSecondary"/> Prestations / Services</h3>
+              <button type="button" onClick={addItem} className="text-xs font-bold text-buttonGradientSecondary hover:bg-indigo-50 px-3 py-1 rounded-lg">+ Ajouter une ligne</button>
             </div>
             <div className="space-y-3">
               {formData.items.map((item, index) => (
                 <div key={index} className="flex gap-4 items-center animate-in fade-in">
-                  <input required placeholder="Désignation" value={item.libelle} onChange={(e) => updateItem(index, 'libelle', e.target.value)} className="flex-1 p-2 border-b outline-none focus:border-buttonGradientPrimary" />
-                  <input required type="number" placeholder="P.U" value={item.prix_unitaire} onChange={(e) => updateItem(index, 'prix_unitaire', e.target.value)} className="w-32 p-2 border-b text-right outline-none focus:border-buttonGradientPrimary" />
-                  <input required type="number" placeholder="Qté" value={item.quantite} onChange={(e) => updateItem(index, 'quantite', e.target.value)} className="w-20 p-2 border-b text-center outline-none focus:border-buttonGradientPrimary" />
-                  <div className="w-32 text-right font-bold text-gray-600">{(Number(item.prix_unitaire) * Number(item.quantite) || 0).toLocaleString()}</div>
+                  <input required placeholder="Désignation" value={item.libelle} onChange={(e) => updateItem(index, 'libelle', e.target.value)} className="flex-1 p-2 border-b outline-none focus:border-buttonGradientPrimary text-sm" />
+                  <input required type="number" placeholder="P.U" value={item.prix_unitaire} onChange={(e) => updateItem(index, 'prix_unitaire', e.target.value)} className="w-32 p-2 border-b text-right outline-none focus:border-buttonGradientPrimary text-sm font-bold" />
+                  <input required type="number" placeholder="Qté" value={item.quantite} onChange={(e) => updateItem(index, 'quantite', e.target.value)} className="w-16 p-2 border-b text-center outline-none focus:border-buttonGradientPrimary text-sm" />
+                  <div className="w-28 text-right font-black text-buttonGradientSecondary text-sm">{(Number(item.prix_unitaire) * Number(item.quantite) || 0).toLocaleString()}</div>
                   <button type="button" onClick={() => removeItem(index)} className="p-2 text-red-300 hover:text-red-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
                 </div>
               ))}
             </div>
           </div>
+
+          {/* Section 5: Commentaires & Remarques */}
+          <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-gray-400 uppercase">Remarques (Visible sur PDF)</label>
+              <textarea value={formData.commentaire} onChange={(e) => setFormData({...formData, commentaire: e.target.value})} rows="3" className="w-full p-3 bg-gray-50 rounded-xl text-sm outline-none border focus:border-indigo-100" placeholder="Conditions de paiement, validité..."></textarea>
+            </div>
+            {/* <div className="space-y-1">
+              <label className="text-[10px] font-bold text-indigo-400 uppercase flex items-center gap-1"><Database className="w-3 h-3"/> Commentaires Internes (Privé)</label>
+              <textarea value={formData.commentaire} onChange={(e) => setFormData({...formData, commentaire: e.target.value})} rows="3" className="w-full p-3 bg-indigo-50/30 border border-indigo-50 rounded-xl text-sm outline-none focus:border-indigo-200" placeholder="Notes pour l'équipe..."></textarea>
+            </div> */}
+          </div>
         </form>
 
+        {/* Footer */}
         <div className="p-8 border-t bg-gray-50 flex flex-wrap justify-between items-center gap-6">
           <div className="flex gap-8 items-center">
             <label className="flex items-center gap-2 cursor-pointer font-bold text-gray-600 text-sm">
                <input type="checkbox" checked={formData.tva} onChange={(e) => setFormData({...formData, tva: e.target.checked})} className="w-5 h-5 accent-buttonGradientSecondary" /> Inclure TVA (16%)
             </label>
-            <select value={formData.devise} onChange={(e) => setFormData({...formData, devise: e.target.value})} className="p-2 bg-white border rounded-lg font-bold outline-buttonGradientPrimary">
+            <select value={formData.devise} onChange={(e) => setFormData({...formData, devise: e.target.value})} className="p-2 bg-white border rounded-lg font-bold outline-buttonGradientPrimary text-sm">
               <option value="MRU">MRU</option><option value="EUR">EUR</option><option value="DOLLAR">USD</option>
             </select>
           </div>
@@ -116,7 +163,7 @@ function DevisModal({ devis, clients, onClose, onSave }) {
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total Global TTC</p>
               <p className="text-3xl font-bold text-buttonGradientSecondary">{calculateTotal().toLocaleString()} <span className="text-sm font-normal text-gray-400">{formData.devise}</span></p>
             </div>
-            <button onClick={(e) => { e.preventDefault(); onSave(formData); }} className="px-10 py-4 bg-buttonGradientSecondary text-white rounded-2xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all active:scale-95">
+            <button onClick={(e) => { e.preventDefault(); onSave(formData); }} className="px-10 py-4 bg-buttonGradientSecondary text-white rounded-2xl font-bold hover:opacity-90 shadow-lg shadow-indigo-200 transition-all active:scale-95">
               {devis ? "Mettre à jour" : "Générer le Devis"}
             </button>
           </div>

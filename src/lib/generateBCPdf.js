@@ -8,6 +8,19 @@ import sigDG from '@/assets/signatures/directeur_general.png';
 import sigDO from '@/assets/signatures/directeur_operations.png';
 import sigComptable from '@/assets/signatures/comptable.png';
 
+/**
+ * Formatage manuel pour éviter l'erreur du caractère "/" à la place de l'espace
+ * et garantir un affichage professionnel des montants financiers.
+ */
+const formatPrix = (valeur) => {
+  if (valeur === undefined || valeur === null || isNaN(valeur)) return '0,00';
+  const num = Number(valeur);
+  let [entier, decimal] = num.toFixed(2).split('.');
+  // Ajoute un espace standard tous les 3 chiffres
+  entier = entier.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  return `${entier},${decimal}`;
+};
+
 export const generateBCPDF = async (bc, fournisseur) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -15,8 +28,6 @@ export const generateBCPDF = async (bc, fournisseur) => {
 
   console.log("Génération PDF pour le bon de commande :", bc);
   
-  const greyLight = [240, 240, 240];
-  const greyDark = [100, 100, 100];
   let yPos = 20;
 
   // ============== 1. TITRE PRINCIPAL ==============
@@ -73,14 +84,15 @@ export const generateBCPDF = async (bc, fournisseur) => {
   doc.text('OBJET DE LA COMMANDE', 14, yPos);
   
   doc.setFont('helvetica', 'normal');
-  yPos += 4;
-  doc.text(bc.objet_commande || '', 14, yPos);
+  yPos += 6;
+  const splitObjet = doc.splitTextToSize(bc.objet_commande || '', 180);
+  doc.text(splitObjet, 14, yPos);
 
-  yPos += 10;
+  yPos += (splitObjet.length * 5) + 5;
 
   // ============== 5. TABLEAU DES ARTICLES ==============
   const currency = bc.devise || 'MRU';
-  const totalHT = bc.items.reduce((sum, item) => sum + (item.prix_unitaire * item.quantite), 0);
+  const totalHT = bc.items.reduce((sum, item) => sum + (Number(item.prix_unitaire) * Number(item.quantite)), 0);
   const tva = totalHT * 0.16;
   const totalTTC = totalHT + tva;
 
@@ -88,22 +100,29 @@ export const generateBCPDF = async (bc, fournisseur) => {
     index + 1,
     item.libelle,
     item.quantite,
-    Number(item.prix_unitaire).toLocaleString(),
-    Number(item.prix_unitaire * item.quantite).toLocaleString()
+    formatPrix(item.prix_unitaire),
+    formatPrix(Number(item.prix_unitaire) * Number(item.quantite))
   ]);
 
-  tableRows.push([{ content: 'TOTAL HT', colSpan: 3, styles: { fontStyle: 'bold', halign: 'right' } }, '', totalHT.toLocaleString()]);
-  tableRows.push([{ content: 'TVA (16%)', colSpan: 3, styles: { fontStyle: 'bold', halign: 'right' } }, '', tva.toLocaleString()]);
-  tableRows.push([{ content: 'TOTAL TTC', colSpan: 3, styles: { fontStyle: 'bold', fillColor: [240, 240, 240], halign: 'right' } }, '', { content: totalTTC.toLocaleString() + ' ' + currency, styles: { fontStyle: 'bold' } }]);
+  // Lignes de totaux
+  tableRows.push([{ content: 'TOTAL HT', colSpan: 4, styles: { fontStyle: 'bold', halign: 'right' } }, formatPrix(totalHT)]);
+  tableRows.push([{ content: 'TVA (16%)', colSpan: 4, styles: { fontStyle: 'bold', halign: 'right' } }, formatPrix(tva)]);
+  tableRows.push([{ content: 'TOTAL TTC', colSpan: 4, styles: { fontStyle: 'bold', fillColor: [240, 240, 240], halign: 'right' } }, { content: `${formatPrix(totalTTC)} ${currency}`, styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }]);
 
   autoTable(doc, {
     startY: yPos,
-    head: [['N°', 'Désignation', 'Quantité', 'Prix unitaire', 'Montant']],
+    head: [['N°', 'Désignation', 'Qté', 'Prix unitaire', 'Montant']],
     body: tableRows,
     theme: 'grid',
     headStyles: { fillColor: [220, 220, 220], textColor: [0, 0, 0], fontStyle: 'bold', halign: 'center' },
     styles: { fontSize: 9, lineColor: [0, 0, 0], lineWidth: 0.1 },
-    columnStyles: { 0: { halign: 'center' }, 2: { halign: 'center' }, 3: { halign: 'right' }, 4: { halign: 'right' } }
+    columnStyles: { 
+      0: { halign: 'center', cellWidth: 10 }, 
+      1: { cellWidth: 'auto' },
+      2: { halign: 'center', cellWidth: 15 }, 
+      3: { halign: 'right', cellWidth: 35 }, 
+      4: { halign: 'right', cellWidth: 35 } 
+    }
   });
 
   yPos = doc.lastAutoTable.finalY + 15;
@@ -119,17 +138,14 @@ export const generateBCPDF = async (bc, fournisseur) => {
     head: [['Pour SMTLA', 'Pour le fournisseur']],
     body: [
       ['Nom / Fonction :', 'Nom / Fonction :'],
-      [{ content: 'Signature & Cachet :', styles: { minCellHeight: 40 } }, 'Signature & Cachet :']
+      [{ content: 'Signature & Cachet :', styles: { minCellHeight: 35 } }, 'Signature & Cachet :']
     ],
     theme: 'grid',
     headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', halign: 'center' },
     styles: { lineColor: [0, 0, 0], lineWidth: 0.1, fontSize: 10 }
   });
 
-  // Ajout du cachet automatique
-  const finalYTable = doc.lastAutoTable.finalY;
-  const stampY = finalYTable - 40;
-
+  // Ajout du cachet/signature automatique
   if (bc.status === 'valide' && bc.valideur) {
     let signatureImg = null;
     const userType = bc.valideur.type;
@@ -138,21 +154,23 @@ export const generateBCPDF = async (bc, fournisseur) => {
       case 'directeur_general': signatureImg = sigDG; break;
       case 'directeur_operations': signatureImg = sigDO; break;
       case 'comptable': signatureImg = sigComptable; break;
+      default: signatureImg = sigComptable;
     }
 
     if (signatureImg) {
-      doc.addImage(signatureImg, 'PNG', 35, stampY, 50, 50);
+      // Positionné dans la première cellule de signature de SMTLA
+      doc.addImage(signatureImg, 'PNG', 35, doc.lastAutoTable.finalY - 32, 45, 45);
     }
   }
 
-  // ============== 7. TRAÇABILITÉ (VOTRE MODIFICATION) ==============
+  // ============== 7. TRAÇABILITÉ ==============
   const yTrace = pageHeight - 25;
   doc.setFontSize(8);
   doc.setTextColor(120, 120, 120);
   doc.setFont('helvetica', 'italic');
 
   const createur = (bc.createur?.prenom && bc.createur?.nom) 
-    ? bc.createur.prenom + ' ' + bc.createur.nom 
+    ? `${bc.createur.prenom} ${bc.createur.nom}` 
     : 'Système';
 
   const now = new Date(bc.date_creation || Date.now());
@@ -169,6 +187,5 @@ export const generateBCPDF = async (bc, fournisseur) => {
   doc.setTextColor(150, 150, 150);
   doc.text('Siège social : SOCO BMCI N°0190 Moughata de Tevragh Zeina - Nouakchott - Mauritanie', pageWidth / 2, pageHeight - 10, { align: 'center' });
 
-  // Sauvegarder
   doc.save(`BC_${bc.reference || 'PROVISOIRE'}.pdf`);
 };

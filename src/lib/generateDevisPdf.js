@@ -8,53 +8,51 @@ import sigDG from '@/assets/signatures/directeur_general.png';
 import sigDO from '@/assets/signatures/directeur_operations.png';
 import sigComptable from '@/assets/signatures/comptable.png';
 
-// Fonction de conversion de nombre en lettres françaises
-const numberToFrenchWords = (num) => {
-  if (num === 0) return 'zéro';
+/**
+ * Formate un nombre de manière robuste pour éviter les caractères spéciaux (/) 
+ * sur certains systèmes et navigateurs.
+ */
+const formatPrix = (valeur) => {
+  if (valeur === undefined || valeur === null || isNaN(valeur)) return '0,00';
+  
+  // Conversion en nombre au cas où c'est un string
+  const num = Number(valeur);
+  
+  // On sépare la partie entière et décimale manuellement pour un contrôle total
+  let [entier, decimal] = num.toFixed(2).split('.');
+  
+  // On ajoute l'espace tous les 3 chiffres pour les milliers (formatage manuel)
+  entier = entier.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  
+  // On remplace le point par une virgule pour le format FR
+  return `${entier},${decimal}`;
+};
 
-  const units = ['', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit', 'neuf', 'dix', 'onze', 'douze', 'treize', 'quatorze', 'quinze', 'seize', 'dix-sept', 'dix-huit', 'dix-neuf'];
-  const tens = ['', 'dix', 'vingt', 'trente', 'quarante', 'cinquante', 'soixante', 'soixante-dix', 'quatre-vingt', 'quatre-vingt-dix'];
+// Fonction de conversion de nombre en lettres ANGLAISES corrigée
+const numberToEnglishWords = (num) => {
+  if (num === 0) return 'ZERO';
+  if (!num || isNaN(num)) return '';
 
-  const convertLessThanThousand = (n) => {
-    if (n < 20) return units[n];
-    let ten = Math.floor(n / 10);
-    let unit = n % 10;
-    let tenStr = tens[ten];
-    let addStr = '';
-    if (ten === 7 || ten === 9) {
-      tenStr = tens[ten - 1];
-      addStr = unit === 0 ? '' : (unit === 1 ? ' et ' : '-') + units[10 + unit];
-    } else if (ten === 8) {
-      if (unit === 0) tenStr += 's';
-      addStr = unit > 0 ? '-' + units[unit] : '';
-    } else {
-      addStr = unit > 0 ? (unit === 1 ? ' et ' : '-') + units[unit] : '';
-    }
-    return tenStr + addStr;
+  const a = ['', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE', 'TEN', 'ELEVEN', 'TWELVE', 'THIRTEEN', 'FOURTEEN', 'FIFTEEN', 'SIXTEEN', 'SEVENTEEN', 'EIGHTEEN', 'NINETEEN'];
+  const b = ['', '', 'TWENTY', 'THIRTY', 'FORTY', 'FIFTY', 'SIXTY', 'SEVENTY', 'EIGHTY', 'NINETY'];
+
+  const convert = (n) => {
+    if (n < 20) return a[Math.floor(n)];
+    if (n < 100) return b[Math.floor(n / 10)] + (n % 10 !== 0 ? '-' + a[n % 10] : '');
+    if (n < 1000) return a[Math.floor(n / 100)] + ' HUNDRED' + (n % 100 !== 0 ? ' ' + convert(n % 100) : '');
+    if (n < 1000000) return convert(Math.floor(n / 1000)) + ' THOUSAND' + (n % 1000 !== 0 ? ' ' + convert(n % 1000) : '');
+    // Gestion des millions pour éviter le "Undefined"
+    if (n < 1000000000) return convert(Math.floor(n / 1000000)) + ' MILLION' + (n % 1000000 !== 0 ? ' ' + convert(n % 1000000) : '');
+    return 'LARGE AMOUNT';
   };
 
-  const convertHundreds = (n) => {
-    if (n < 100) return convertLessThanThousand(n);
-    let hundred = Math.floor(n / 100);
-    let rest = n % 100;
-    let hundStr = hundred > 1 ? units[hundred] + ' ' : '';
-    let centS = (hundred > 1 && rest === 0) ? 's' : '';
-    let s = rest > 0 ? ' ' + convertLessThanThousand(rest) : '';
-    return hundStr + (hundred >= 1 ? 'cent' + centS : '') + s;
-  };
-
-  let thousand = Math.floor(num / 1000);
-  let rest = num % 1000;
-  let thouStr = thousand > 1 ? convertHundreds(thousand) + ' mille' : (thousand === 1 ? 'mille' : '');
-  let restStr = rest > 0 ? ' ' + convertHundreds(rest) : '';
-  let words = (thouStr + restStr).trim();
-  return words.charAt(0).toUpperCase() + words.slice(1);
+  const words = convert(Math.floor(num));
+  return words.trim();
 };
 
 export const generateDevisPDF = async (facture, client) => {
   const doc = new jsPDF();
   
-  // Couleurs personnalisées
   const blueHeader = [15, 117, 188]; 
   const lightBlue = [15, 117, 188]; 
   
@@ -63,13 +61,12 @@ export const generateDevisPDF = async (facture, client) => {
   // ============== EN-TÊTE ==============
   const logoWidth = 30;
   const logoHeight = 15;
-
   doc.addImage(logo, 'PNG', 14, yPos - 10, logoWidth, logoHeight);
 
   doc.setFontSize(20);
   doc.setTextColor(...lightBlue);
   doc.setFont('helvetica', 'bold');
-  doc.text('DEVIS', 144, yPos);
+  doc.text('QUOTATION', 144, yPos);
   
   yPos += 14;
   doc.setFontSize(11);
@@ -88,7 +85,7 @@ export const generateDevisPDF = async (facture, client) => {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
   doc.setTextColor(255, 255, 255);
-  doc.text('N° DEVIS', 142, yPos + 5);
+  doc.text('N° Quote', 142, yPos + 5);
   doc.text('DATE', 175, yPos + 5);
   
   yPos += 10;
@@ -107,8 +104,8 @@ export const generateDevisPDF = async (facture, client) => {
   
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
-  doc.text('DEVIS À', 16, yPos + 5);
-  doc.text('RÉF CLIENT', 107, yPos + 5);
+  doc.text('Quote to', 16, yPos + 5);
+  doc.text('RÉF CUSTOMER', 107, yPos + 5);
   
   yPos += 7;
   doc.setTextColor(0, 0, 0);
@@ -116,74 +113,110 @@ export const generateDevisPDF = async (facture, client) => {
   
   const leftCol = 16;
   const rightCol = 107;
-  
+  var yp = 0; 
+
+  // Colonne Gauche
   doc.setFont('helvetica', 'bold');
   doc.text('Client :', leftCol, yPos + 5);
   doc.setFont('helvetica', 'normal');
-  doc.text(facture.client?.nom || facture.client_nom || '---', leftCol + 15, yPos + 5);
+  doc.text(facture.client?.nom || facture.client_nom || '---', leftCol + 25, yPos + 5);
   
   doc.setFont('helvetica', 'bold');
-  doc.text('NIF', leftCol, yPos + 10);
+  doc.text('NIF :', leftCol, yPos + 10);
   doc.setFont('helvetica', 'normal');
-  doc.text(facture.client?.nif || '---', leftCol + 15, yPos + 10);
+  doc.text(facture.client?.nif || '---', leftCol + 25, yPos + 10);
   
   doc.setFont('helvetica', 'bold');
-  doc.text('Port d\'arrivée :', leftCol, yPos + 15);
+  doc.text('Arrival PORT :', leftCol, yPos + 15);
   doc.setFont('helvetica', 'normal');
   doc.text(facture.port_arrive || '---', leftCol + 25, yPos + 15);
-  
+
+  if (facture.type) {
+    yp += 5;
+    doc.setFont('helvetica', 'bold');
+    doc.text('Type :', leftCol, yPos + 15 + yp);
+    doc.setFont('helvetica', 'normal');
+    doc.text(facture.type, leftCol + 25, yPos + 15 + yp);
+  }
+
+  if (facture.poids) {
+    yp += 5;
+    doc.setFont('helvetica', 'bold');
+    doc.text('Weight :', leftCol, yPos + 15 + yp);
+    doc.setFont('helvetica', 'normal');
+    doc.text(facture.poids, leftCol + 25, yPos + 15 + yp);
+  }
+
+  if (facture.description) {
+    yp += 5;
+    doc.setFont('helvetica', 'bold');
+    doc.text('Description :', leftCol, yPos + 15 + yp);
+    doc.setFont('helvetica', 'normal');
+    const splitDesc = doc.splitTextToSize(facture.description, 60);
+    doc.text(splitDesc, leftCol + 25, yPos + 15 + yp);
+    yp += (splitDesc.length - 1) * 4;
+  }
+
+  // Colonne Droite
+  var ypRight = 0;
   doc.setFont('helvetica', 'bold');
-  doc.text('Vessel', rightCol, yPos + 5);
+  doc.text('Vessel :', rightCol, yPos + 5);
   doc.setFont('helvetica', 'normal');
   doc.text(facture.vessel || '---', rightCol + 20, yPos + 5);
   
   doc.setFont('helvetica', 'bold');
-  doc.text('Voyage', rightCol, yPos + 10);
+  doc.text('Voyage :', rightCol, yPos + 10);
   doc.setFont('helvetica', 'normal');
   doc.text(facture.voyage || '---', rightCol + 20, yPos + 10);
   
   doc.setFont('helvetica', 'bold');
-  doc.text('BL NO', rightCol, yPos + 15);
+  doc.text('BL NO :', rightCol, yPos + 15);
   doc.setFont('helvetica', 'normal');
   doc.text(facture.bl || '---', rightCol + 20, yPos + 15);
 
-  var yp = 0;
-
-  if (facture.eta != null) {
+  if (facture.eta) {
+    ypRight += 5;
     doc.setFont('helvetica', 'bold');
-    doc.text('ETA', rightCol, yPos + 20);
+    doc.text('ETA :', rightCol, yPos + 15 + ypRight);
     doc.setFont('helvetica', 'normal');
-    doc.text(facture.eta || '---', rightCol + 20, yPos + 20);
-    yp += 5;
+    doc.text(facture.eta.replace('T', ' '), rightCol + 20, yPos + 15 + ypRight);
   }
 
-  if (facture.etd != null) {
+  if (facture.etd) {
+    ypRight += 5;
     doc.setFont('helvetica', 'bold');
-    doc.text('ETD', rightCol, yPos + 25);
+    doc.text('ETD :', rightCol, yPos + 15 + ypRight);
     doc.setFont('helvetica', 'normal');
-    doc.text(facture.etd || '---', rightCol + 20, yPos + 25);
-    yp += 5;
+    doc.text(facture.etd.replace('T', ' '), rightCol + 20, yPos + 15 + ypRight);
+  }
+
+  if (facture.volume) {
+    ypRight += 5;
+    doc.setFont('helvetica', 'bold');
+    doc.text('Volume :', rightCol, yPos + 15 + ypRight);
+    doc.setFont('helvetica', 'normal');
+    doc.text(facture.volume, rightCol + 20, yPos + 15 + ypRight);
   }
   
-  yPos += 25 + yp;
+  yPos += 20 + Math.max(yp, ypRight);
   
-  // ============== TABLEAU DES ITEMS ==============
+  // ============== TABLEAU ==============
   const currencyLabel = facture.devise || 'MRU';
   const tableData = (facture.items || []).map(item => [
     item.libelle,
     item.quantite,
-    `${Number(item.prix_unitaire).toLocaleString()} ${currencyLabel}`,
-    `${Number(item.montant_total).toLocaleString()} ${currencyLabel}`
+    `${formatPrix(item.prix_unitaire)} ${currencyLabel}`,
+    `${formatPrix(Number(item.prix_unitaire) * Number(item.quantite))} ${currencyLabel}`
   ]);
   
-  const subtotal = (facture.items || []).reduce((sum, item) => sum + Number(item.montant_total || 0), 0);
+  const subtotal = (facture.items || []).reduce((sum, item) => sum + (Number(item.prix_unitaire) * Number(item.quantite) || 0), 0);
   const taxeRate = facture.tva ? 0.16 : 0;
   const taxe = subtotal * taxeRate;
   const total = subtotal + taxe;
   
   autoTable(doc, {
     startY: yPos,
-    head: [['DESCRIPTION', 'QTÉ', `PRIX UNITAIRE ${currencyLabel}`, `MONTANT ${currencyLabel}`]],
+    head: [['DESCRIPTION', 'QTY', `UNIT PRICE ${currencyLabel}`, `TOTAL PRICE ${currencyLabel}`]],
     body: tableData,
     theme: 'grid',
     headStyles: { fillColor: blueHeader, textColor: [255, 255, 255], fontStyle: 'bold' },
@@ -195,81 +228,86 @@ export const generateDevisPDF = async (facture, client) => {
   // ============== TOTAUX ==============
   const xTotaux = 130;
   doc.setFont('helvetica', 'bold');
-  doc.text('SOUS-TOTAL', xTotaux, yPos + 4);
-  doc.text(`${subtotal.toLocaleString()} ${currencyLabel}`, 195, yPos + 4, { align: 'right' });
+  doc.text('HT TOTAL PRICE', xTotaux, yPos + 4);
+  doc.text(`${formatPrix(subtotal)} ${currencyLabel}`, 195, yPos + 4, { align: 'right' });
   yPos += 6;
-  doc.text('TAXE (TVA 16%)', xTotaux, yPos + 4);
-  doc.text(`${taxe.toLocaleString()} ${currencyLabel}`, 195, yPos + 4, { align: 'right' });
+  doc.text('VAT 16%', xTotaux, yPos + 4);
+  doc.text(`${formatPrix(taxe)} ${currencyLabel}`, 195, yPos + 4, { align: 'right' });
   yPos += 6;
   doc.setFillColor(...blueHeader);
   doc.rect(xTotaux - 2, yPos, 67, 7, 'F');
   doc.setTextColor(255, 255, 255);
-  doc.text('TOTAL DEVIS', xTotaux, yPos + 5);
-  doc.text(`${total.toLocaleString()} ${currencyLabel}`, 195, yPos + 5, { align: 'right' });
+  doc.text('TTC', xTotaux, yPos + 5);
+  doc.text(`${formatPrix(total)} ${currencyLabel}`, 195, yPos + 5, { align: 'right' });
   
   yPos += 15;
   doc.setTextColor(0, 0, 0);
-  const currencyWords = { 'MRU': 'Ouguiyas', 'EUR': 'Euros', 'DOLLAR': 'Dollars', 'XOF': 'Francs CFA' };
-  const totalWords = numberToFrenchWords(Math.round(total)) + ' ' + (currencyWords[facture.devise] || 'Ouguiyas');
-  doc.setFont('helvetica', 'normal');
-  doc.text(`Arrêté le présent devis à la somme de : ${totalWords}`, 14, yPos);
+  
+  // ============== MONTANT EN LETTRES ==============
+  const totalWords = numberToEnglishWords(Math.round(total));
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.text(`The present quote is fixed at the sum of : ${totalWords} ${currencyLabel}`, 14, yPos);
 
-  yPos += 15;
+  yPos += 20;
 
   // ============== SIGNATURES & CACHETS ==============
   doc.setFont('helvetica', 'bold');
-  doc.text('Service d\'exploitation', 30, yPos);
-  doc.text('Service Financier', 140, yPos);
+  doc.text('Operations Department', 30, yPos);
+  doc.text('Financial Department', 140, yPos);
   
   if (facture.status === 'valide') {
-    let signatureImg = null;
-    switch (facture.valideur?.type) {
-      case 'directeur_general': signatureImg = sigDG; break;
-      case 'directeur_operations': signatureImg = sigDO; break;
-      case 'comptable': signatureImg = sigComptable; break;
-    }
-
+    let signatureImg = sigDO; 
     if (signatureImg) {
-      doc.addImage(signatureImg, 'PNG', 25, yPos, 45, 45);
+      doc.addImage(signatureImg, 'PNG', 25, yPos + 5, 40, 40);
     }
   }
   
   doc.setDrawColor(200, 200, 200);
-  doc.line(20, yPos + 22, 80, yPos + 22); 
-  doc.line(130, yPos + 22, 190, yPos + 22);
+  doc.line(20, yPos + 45, 80, yPos + 45); 
+  doc.line(130, yPos + 45, 190, yPos + 45);
   
-  yPos += 60;
+  yPos += 55; 
   
-  // ============== INFOS CRÉATION (AJOUTÉ) ==============
+  // ============== AJOUT DU COMMENTAIRE ==============
+  if (facture.commentaire) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(...blueHeader);
+    doc.text('Comment', 14, yPos);
+    
+    yPos += 5;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(0, 0, 0);
+    
+    const splitRemarks = doc.splitTextToSize(facture.commentaire, 180);
+    doc.text(splitRemarks, 14, yPos);
+    yPos += (splitRemarks.length * 5) + 5;
+  }
+  
+  // ============== INFOS CRÉATION ==============
   doc.setFontSize(8);
   doc.setTextColor(120, 120, 120);
   doc.setFont('helvetica', 'italic');
   
-  // Logique du créateur basée sur votre changement
-  const createur = (facture.createur?.prenom && facture.createur?.nom) 
-    ? `${facture.createur.prenom} ${facture.createur.nom}` 
-    : 'Système';
-    
-  const now = new Date(facture.date_creation || Date.now());
-  const dateGen = now.toLocaleString('fr-FR', {
-    day: '2-digit', month: '2-digit', year: 'numeric',
-    hour: '2-digit', minute: '2-digit'
-  });
+  const createur = (facture.createur?.prenom) ? `${facture.createur.prenom} ${facture.createur.nom}` : 'System';
+  const now = new Date();
+  const dateGen = now.toLocaleString('fr-FR');
 
-  doc.text(`Devis établi par : ${createur}`, 14, yPos);
-  doc.text(`Document généré le : ${dateGen}`, 14, yPos + 4);
-
-  yPos += 12;
+  doc.text(`Created by : ${createur}`, 14, yPos);
+  doc.text(`Document generated on : ${dateGen}`, 14, yPos + 4);
 
   // ============== PIED DE PAGE ==============
   const pageHeight = doc.internal.pageSize.height;
   doc.setFontSize(7);
   doc.setFont('helvetica', 'italic');
-  doc.text('EXCULDING: ALL CUSTOMS DUTIES AND TAXES', 14, yPos);
+  doc.setTextColor(0, 0, 0);
+  doc.text('EXCLUDING: ALL CUSTOMS DUTIES AND TAXES', 14, pageHeight - 20);
   
   doc.setTextColor(150, 150, 150);
   doc.text('Siège social : SOCO BMCI N°0190 Moughata de Tevragh Zeina - Nouakchott - Mauritanie', 105, pageHeight - 10, { align: 'center' });
-  doc.text('Tél : 26 31 98 31 / 31 31 98 31 | NIF : 01328566', 105, pageHeight - 6, { align: 'center' });
+  doc.text('Tél : 24 34 40 01 / 24 34 40 00 | NIF : 01328566', 105, pageHeight - 6, { align: 'center' });
   
   doc.save(`${facture.reference}.pdf`);
 };

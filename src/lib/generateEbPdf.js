@@ -4,13 +4,25 @@ import logo from '@/assets/logo.png';
 import signatureDG from '@/assets/signatures/directeur_general.png';
 import signatureComptable from '@/assets/signatures/comptable.png';
 
+/**
+ * Formatage robuste pour éviter les erreurs de locale (/) 
+ * et garantir un espace standard comme séparateur de milliers.
+ */
+const formatPrix = (valeur) => {
+  if (valeur === undefined || valeur === null || isNaN(valeur)) return '0,00';
+  const num = Number(valeur);
+  let [entier, decimal] = num.toFixed(2).split('.');
+  // Ajoute un espace standard tous les 3 chiffres
+  entier = entier.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  return `${entier},${decimal}`;
+};
+
 export function generateEbPdf(eb) {
   const doc = new jsPDF('p', 'mm', 'a4');
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   
   const orangeFill = [248, 192, 80];
-  const lightBlueFill = [222, 235, 247];
   const blackText = [0, 0, 0];
 
   // --- 1. CALCULS ---
@@ -39,7 +51,6 @@ export function generateEbPdf(eb) {
   // --- 3. BLOCS INFOS (CÔTE À CÔTE) ---
   const startYInfos = 35;
 
-  // Tableau GAUCHE : Origine
   autoTable(doc, {
     startY: startYInfos,
     margin: { right: 110 },
@@ -54,7 +65,6 @@ export function generateEbPdf(eb) {
     columnStyles: { 0: { fontStyle: 'bold', cellWidth: 30, fillColor: [245, 245, 245] } }
   });
 
-  // Tableau DROITE : Logistique
   autoTable(doc, {
     startY: startYInfos,
     margin: { left: 110 },
@@ -70,16 +80,17 @@ export function generateEbPdf(eb) {
   });
 
   // --- 4. TABLEAU DES ITEMS (FORMAT VERTICAL) ---
+  const currencyLabel = eb.devise || 'MRU';
   const tableHead = [['Désignation', 'Type', 'Montant']];
   const tableBody = eb.items?.map(item => [
     item.libelle || '',
     item.type ? item.type.charAt(0).toUpperCase() + item.type.slice(1) : 'Equipement',
-    `${Number(item.montant).toLocaleString()} ${eb.devise || 'MRU'}`
+    `${formatPrix(item.montant)} ${currencyLabel}`
   ]) || [];
 
   tableBody.push([
     { content: 'TOTAL', colSpan: 2, styles: { halign: 'right', fontStyle: 'bold', fillColor: orangeFill } },
-    { content: `${montantHT.toLocaleString()} ${eb.devise || 'MRU'}`, styles: { fontStyle: 'bold', fillColor: orangeFill } }
+    { content: `${formatPrix(montantHT)} ${currencyLabel}`, styles: { fontStyle: 'bold', fillColor: orangeFill } }
   ]);
 
   autoTable(doc, {
@@ -100,15 +111,15 @@ export function generateEbPdf(eb) {
   autoTable(doc, {
     startY: doc.lastAutoTable.finalY + 10,
     body: [
-      ['RATE OF BCM', '', '', '', 'MONTANT HT', `${montantHT.toLocaleString()} ${eb.devise || 'MRU'}`],
-      ['1000 XOF', '1 USD', '1 EURO', 'MRU', 'TVA 16%', `${montantTVA > 0 ? montantTVA.toLocaleString() : '-'} ${eb.devise || 'MRU'}`],
+      ['RATE OF BCM', '', '', '', 'MONTANT HT', `${formatPrix(montantHT)} ${currencyLabel}`],
+      ['1000 XOF', '1 USD', '1 EURO', 'MRU', 'TVA 16%', `${montantTVA > 0 ? formatPrix(montantTVA) : '-'} ${currencyLabel}`],
       [
         eb.devise === 'XOF' ? '1' : '', 
         eb.devise === 'USD' ? '1' : '', 
         eb.devise === 'EURO' ? '1' : '', 
         '1', 
         'MONTANT TTC', 
-        `${montantTTC.toLocaleString()} ${eb.devise || 'MRU'}`
+        `${formatPrix(montantTTC)} ${currencyLabel}`
       ]
     ],
     theme: 'grid',
@@ -125,19 +136,8 @@ export function generateEbPdf(eb) {
     head: [['DIRECTEUR GÉNÉRAL', 'FINANCE / COMPTABILITÉ', 'BÉNÉFICIAIRE']],
     body: [['', '', '']], 
     theme: 'grid',
-    styles: { 
-      minCellHeight: 25, 
-      halign: 'center', 
-      valign: 'middle',
-      fontSize: 9, 
-      fontStyle: 'bold' 
-    },
-    headStyles: { 
-      fillColor: [245, 245, 245], 
-      textColor: blackText, 
-      lineWidth: 0.1,
-      minCellHeight: 8 
-    },
+    styles: { minCellHeight: 25, halign: 'center', valign: 'middle', fontSize: 9, fontStyle: 'bold' },
+    headStyles: { fillColor: [245, 245, 245], textColor: blackText, lineWidth: 0.1, minCellHeight: 8 },
     didDrawCell: (data) => {
       if (eb.status === 'valide' && data.section === 'body') {
         const imgWidth = 22;
@@ -156,15 +156,12 @@ export function generateEbPdf(eb) {
     }
   });
 
-  // --- 7. INFOS CRÉATION & PIED DE PAGE (MODIFIÉ) ---
+  // --- 7. INFOS CRÉATION & PIED DE PAGE ---
   const yTrace = pageHeight - 25;
   doc.setFontSize(8);
   doc.setTextColor(120, 120, 120);
   doc.setFont('helvetica', 'italic');
 
-  console.log(eb);
-
-  // Utilisation de votre logique de nom complet
   const createur = (eb.createur?.prenom && eb.createur?.nom) 
     ? `${eb.createur.prenom} ${eb.createur.nom}` 
     : 'Système';
@@ -178,7 +175,6 @@ export function generateEbPdf(eb) {
   doc.text(`Document établi par : ${createur}`, 14, yTrace);
   doc.text(`Document généré le : ${dateGen}`, 14, yTrace + 4);
 
-  // Pied de page fixe
   doc.setFontSize(7);
   doc.setTextColor(150, 150, 150);
   doc.text('Siège social : SOCO BMCI N°0190 Moughata de Tevragh Zeina - Nouakchott - Mauritanie', pageWidth / 2, pageHeight - 10, { align: 'center' });

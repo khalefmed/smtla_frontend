@@ -4,11 +4,11 @@ import toast from 'react-hot-toast';
 import { useTranslation } from "react-i18next";
 import { 
   Search, Plus, FileText, Trash2, Edit3, 
-  ArrowRightLeft, Anchor, User, FileCheck, XCircle, Filter, Eye, Ship, Calendar
+  ArrowRightLeft, Anchor, User, FileCheck, XCircle, Eye, Ship, Calendar, Box, Weight, Info
 } from 'lucide-react';
 import DevisModal from '@/components/ui/shared/devisModal';
 import { generateDevisPDF } from '@/lib/generateDevisPdf';
-import { getRole, getUserData } from '@/lib/utils';
+import { getRole } from '@/lib/utils';
 
 // --- COMPOSANT DE VUE DÉTAILLÉE ---
 function DevisPreviewModal({ devis, onClose }) {
@@ -29,29 +29,52 @@ function DevisPreviewModal({ devis, onClose }) {
         </div>
         
         <div className="p-8 space-y-6 overflow-y-auto max-h-[75vh]">
-          {/* Info Logistique */}
+          {/* Info Logistique Étendue */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
             <div>
-              <p className="text-[10px] font-bold text-gray-400 uppercase">Navire</p>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Navire / Type</p>
               <p className="font-bold text-sm flex items-center gap-1">
                 <Ship className="w-3 h-3 text-indigo-500"/> {devis.vessel || '---'}
               </p>
+              {devis.type && <p className="text-[10px] text-indigo-600 font-bold uppercase">{devis.type}</p>}
             </div>
             <div>
-              <p className="text-[10px] font-bold text-gray-400 uppercase">Voyage</p>
-              <p className="font-bold text-sm">{devis.voyage || '---'}</p>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Volume / Poids</p>
+              <div className="flex flex-col gap-0.5">
+                <p className="font-bold text-[11px] flex items-center gap-1"><Box className="w-2.5 h-2.5 text-gray-400"/> {devis.volume || '---'}</p>
+                <p className="font-bold text-[11px] flex items-center gap-1"><Weight className="w-2.5 h-2.5 text-gray-400"/> {devis.poids || '---'}</p>
+              </div>
             </div>
             <div>
-              <p className="text-[10px] font-bold text-gray-400 uppercase">ETA</p>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">ETA</p>
               <p className="font-bold text-sm flex items-center gap-1">
                 <Calendar className="w-3 h-3 text-indigo-500"/> 
                 {devis.eta ? new Date(devis.eta).toLocaleDateString() : '---'}
               </p>
             </div>
             <div>
-              <p className="text-[10px] font-bold text-gray-400 uppercase">Port</p>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Port</p>
               <p className="font-bold text-sm">{devis.port_arrive || '---'}</p>
             </div>
+          </div>
+
+          {/* Description & Commentaire */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {devis.description && (
+              <div className="flex gap-2">
+                <Info className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5"/>
+                <div>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase">Description Cargaison</p>
+                  <p className="text-xs text-gray-700 italic">"{devis.description}"</p>
+                </div>
+              </div>
+            )}
+            {devis.commentaire && (
+              <div className="p-3 bg-amber-50 rounded-xl border border-amber-100">
+                <p className="text-[10px] font-bold text-amber-800 uppercase mb-1">Commentaire</p>
+                <p className="text-xs text-amber-900 leading-tight">{devis.commentaire}</p>
+              </div>
+            )}
           </div>
 
           {/* Table Items */}
@@ -102,7 +125,7 @@ function Devis() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
-  const [showPreview, setShowPreview] = useState(false); // État pour l'oeil
+  const [showPreview, setShowPreview] = useState(false);
   const [selectedDevis, setSelectedDevis] = useState(null);
 
   const currentRole = getRole();
@@ -129,29 +152,16 @@ function Devis() {
 
   const handleSave = async (formData) => {
     try {
-      const dataToSend = { ...formData };
-      if (!formData.eta || formData.eta === "") {
-        dataToSend.eta = null;
-      } else {
-        dataToSend.eta = new Date(formData.eta).toISOString();
-      }
-
-      if (!formData.etd || formData.etd === "") {
-        dataToSend.etd = null;
-      } else {
-        dataToSend.etd = new Date(formData.etd).toISOString();
-      }
       if (selectedDevis) {
-        await api.put(`devis/${selectedDevis.id}/`, dataToSend);
+        await api.put(`devis/${selectedDevis.id}/`, formData);
         toast.success(t("Devis mis à jour"));
       } else {
-        await api.post('devis/', dataToSend);
+        await api.post('devis/', formData);
         toast.success(t("Devis créé avec succès"));
       }
       setShowModal(false);
       fetchData();
     } catch (error) { 
-      console.log(error);
       toast.error(t("Erreur lors de l'enregistrement")); 
     }
   };
@@ -180,14 +190,6 @@ function Devis() {
       toast.success(t("Devis supprimé"));
       fetchData();
     } catch (error) { toast.error(t("Erreur suppression")); }
-  };
-
-  const handleDownloadPDF = (devis) => {
-    // if (devis.status !== 'valide') {
-    //   toast.error(t("Le PDF n'est disponible que pour les devis validés"));
-    //   return;
-    // }
-    generateDevisPDF(devis);
   };
 
   const StatusBadge = ({ status }) => {
@@ -267,7 +269,6 @@ function Devis() {
                     <Anchor className="w-3.5 h-3.5 text-indigo-400"/> {devis.vessel || '---'}
                   </div>
                   <div className="text-[11px] font-bold text-gray-400 mt-1 uppercase">
-                    {/* Vérification si eta existe avant de créer l'objet Date */}
                     ETA: {devis.eta ? new Date(devis.eta).toLocaleDateString() : '---'}
                   </div>
                 </td>
@@ -277,8 +278,7 @@ function Devis() {
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex justify-center gap-1">
-                    {/* OEIL : Détails */}
-                    <button onClick={() => { setSelectedDevis(devis); setShowPreview(true); }} className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg" title="Voir détails">
+                    <button onClick={() => { setSelectedDevis(devis); setShowPreview(true); }} className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg">
                       <Eye className="w-5 h-5" />
                     </button>
 
@@ -299,24 +299,18 @@ function Devis() {
                       </button>
                     )}
 
-                    {/* PDF : Uniquement si valide (via handleDownloadPDF) */}
-                    <button 
-                        onClick={() => handleDownloadPDF(devis)} 
-                        className={`p-2 rounded-lg transition-colors ${devis.status === 'valide' ? 'text-gray-600 hover:text-indigo-600 hover:bg-indigo-50' : 'text-gray-600 hover:text-indigo-600 hover:bg-indigo-50'}`} 
-                        title="PDF"
-                    >
+                    <button onClick={() => generateDevisPDF(devis)} className="p-2 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg">
                       <FileText className="w-5 h-5" />
                     </button>
 
                     {peutModifier(devis) && (
-                      <button onClick={() => { setSelectedDevis(devis); setShowModal(true); }} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg" title="Modifier">
+                      <button onClick={() => { setSelectedDevis(devis); setShowModal(true); }} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg">
                         <Edit3 className="w-5 h-5" />
                       </button>
                     )}
 
-                    {/* SUPPRESSION : Uniquement si NON valide et DG */}
                     {currentRole === 'Directeur Général' && devis.status !== 'valide' && (
-                       <button onClick={() => handleDelete(devis.id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg" title="Supprimer">
+                       <button onClick={() => handleDelete(devis.id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg">
                         <Trash2 className="w-5 h-5" />
                       </button>
                     )}
@@ -329,7 +323,6 @@ function Devis() {
       </div>
 
       {showModal && <DevisModal devis={selectedDevis} clients={clients} onClose={() => setShowModal(false)} onSave={handleSave} />}
-      
       {showPreview && <DevisPreviewModal devis={selectedDevis} onClose={() => setShowPreview(false)} />}
     </div>
   );

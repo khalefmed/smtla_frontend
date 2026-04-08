@@ -1,8 +1,8 @@
 import axios from "axios";
 
-// export const BACKEND_BASE_URL = "http://127.0.0.1:8000/api/";
+export const BACKEND_BASE_URL = "http://127.0.0.1:8000/api/";
 // export const BACKEND_BASE_URL = "https://nineoumar.pythonanywhere.com/api/";
-export const BACKEND_BASE_URL = "https://api.smtla-sa.com/api/";
+// export const BACKEND_BASE_URL = "https://api.smtla-sa.com/api/";
 // export const BACKEND_BASE_URL = "https://nineoumar.pythonanywhere.com/api/";
 
 export const api = axios.create({
@@ -28,7 +28,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     console.error("API Error:", error);
-    if (error.response && error.response.status === 401) {
+    if (error.response && error.response.status === 401 && error.config.url !== "connexion/") {
       window.location.href = "/deconnexion"; 
     }
     
