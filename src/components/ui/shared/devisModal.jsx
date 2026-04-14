@@ -11,6 +11,7 @@ function DevisModal({ devis, clients, onClose, onSave }) {
     volume: '',
     poids: '',
     voyage: '',
+    is_excluding_customs: false,
     eta: '',
     etd: '',
     bl: '',
@@ -31,6 +32,7 @@ function DevisModal({ devis, clients, onClose, onSave }) {
         description: devis.description || '',
         volume: devis.volume || '',
         poids: devis.poids || '',
+        is_excluding_customs: devis.is_excluding_customs || false,
         voyage: devis.voyage || '',
         eta: devis.eta?.slice(0, 16) || '',
         etd: devis.etd?.slice(0, 16) || '',
@@ -42,6 +44,7 @@ function DevisModal({ devis, clients, onClose, onSave }) {
         items: devis.items?.map(i => ({ libelle: i.libelle, prix_unitaire: i.prix_unitaire, quantite: i.quantite })) || [{ libelle: '', prix_unitaire: '', quantite: 1 }]
       });
     }
+    console.log("Loaded Devis into form:", devis);
   }, [devis]);
 
   const updateItem = (index, field, value) => {
@@ -151,8 +154,11 @@ function DevisModal({ devis, clients, onClose, onSave }) {
         {/* Footer */}
         <div className="p-8 border-t bg-gray-50 flex flex-wrap justify-between items-center gap-6">
           <div className="flex gap-8 items-center">
-            <label className="flex items-center gap-2 cursor-pointer font-bold text-gray-600 text-sm">
+            <label className="flex items-center gap-2 cursor-pointer font-bold text-gray-600 text-xs">
                <input type="checkbox" checked={formData.tva} onChange={(e) => setFormData({...formData, tva: e.target.checked})} className="w-5 h-5 accent-buttonGradientSecondary" /> Inclure TVA (16%)
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer font-bold text-gray-600 text-xs">
+               <input type="checkbox" checked={formData.is_excluding_customs} onChange={(e) => setFormData({...formData, is_excluding_customs: e.target.checked})} className="w-5 h-5 accent-buttonGradientSecondary" /> Excluding Customs
             </label>
             <select value={formData.devise} onChange={(e) => setFormData({...formData, devise: e.target.value})} className="p-2 bg-white border rounded-lg font-bold outline-buttonGradientPrimary text-sm">
               <option value="MRU">MRU</option><option value="EUR">EUR</option><option value="DOLLAR">USD</option>

@@ -34,10 +34,14 @@ export const generatePDAPDF = async (pda) => {
   // ============== INFOS CLIENT & NAVIRE ==============
   const infoData = [
     ['Customer:', pda.client?.nom || pda.client_nom || '---'],
+    ['Phone:', pda.client?.telephone || '---'],
+    ['Email:', pda.client?.email || pda.client_email || '---'],
     ['Port d\'arrivée:', pda.port_of_arrival || 'NOUAKCHOTT'],
     ['Vessel:', pda.vessel_name || '---'],
     ['Stay Duration:', `${days} Days`],
-    ['Cargo:', pda.cargo_description || 'AS PER CARGO LIST ATTACHED']
+    ['Cargo:', pda.cargo_description || 'AS PER CARGO LIST ATTACHED'],
+    ['Weight:', pda.weight || '----'],
+    ['Trip Number:', pda.voyage || '----']
   ]; 
 
   infoData.forEach(([label, value]) => {

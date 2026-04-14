@@ -73,7 +73,7 @@ export const generateBadPDF = async (bad, client) => {
   doc.text(`BAD N° : ${bad.reference || 'N/A'} - ${bad.navire || ''}`, 196, yPos, { align: 'right' });
 
   yPos += 5;
-  doc.text('SOCO CITE PLAGE 190 - TEL +222 43440001 - +222 37818387', 14, yPos);
+  doc.text('SOCO CITE PLAGE 190 - TEL +222 24 34 40 01 - +222 24 34 40 00', 14, yPos);
   doc.text(`Référence client : ${client?.nom || bad.client_nom || 'CLIENT'}`, 196, yPos, { align: 'right' });
 
   yPos += 5;
@@ -126,7 +126,7 @@ export const generateBadPDF = async (bad, client) => {
 
   autoTable(doc, {
     startY: yPos,
-    head: [['ITEMS', 'BL - CONNAISSEMENT', 'PACKAGE NUMBER', 'WEIGHT KG']],
+    head: [['ITEMS', 'BL - CONNAISSEMENT', 'PACKAGE', 'WEIGHT (KG)']],
     body: tableData,
     theme: 'grid',
     headStyles: { fillColor: lightBlue, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },

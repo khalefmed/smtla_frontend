@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { X, Plus, Trash2, Ship, ListPlus, Database, Calculator, User } from 'lucide-react';
+import { X, Plus, Trash2, Ship, ListPlus, Database, Calculator, User, Weight } from 'lucide-react';
+import { TripIcon } from '@/assets/icons/trip';
 
 const DEFAULT_PDA_ITEMS = [
   // --- PORTS DUES (Basé sur le GRT du navire : 16 848) ---
@@ -35,11 +36,13 @@ const CATEGORIES = [
 
 function PDAModal({ pda, clients, onClose, onSave }) {
   const [formData, setFormData] = useState({
-    pda_number: '',
+    // pda_number: '',
     client_id: '',
     vessel_name: '',
     port_of_arrival: 'NOUAKCHOTT',
     cargo_description: '',
+    weight: '',
+    voyage: '',
     currency: 'EUR',
     number_of_days: '',
     apply_vat: true,
@@ -58,7 +61,7 @@ function PDAModal({ pda, clients, onClose, onSave }) {
     } else {
       setFormData(prev => ({
         ...prev,
-        pda_number: `PDA-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000)}`,
+        // pda_number: `PDA-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000)}`,
         items: [...DEFAULT_PDA_ITEMS],
         remarks: DEFAULT_REMARKS
       }));
@@ -106,15 +109,15 @@ function PDAModal({ pda, clients, onClose, onSave }) {
 
         <form onSubmit={handleSubmit} className="overflow-y-auto p-8 space-y-8">
           {/* Section 1: Header Info */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="md:col-span-1">
-              <label className="text-[10px] font-bold text-gray-400 uppercase">PDA Number</label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* <div className="md:col-span-1">
+              <label className="text-[10px] font-bold text-gray-400 uppercase">Numero de PDA</label>
               <input required type="text" value={formData.pda_number} onChange={(e) => setFormData({...formData, pda_number: e.target.value})} className="w-full p-3 bg-gray-50 border rounded-xl font-bold outline-buttonGradientPrimary" />
-            </div>
+            </div> */}
 
             {/* CHANGEMENT ICI : REMPLACEMENT PAR SELECT CLIENT */}
-            <div className="md:col-span-2">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Customer / Principal</label>
+            <div className="md:col-span-1">
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Client</label>
               <div className="relative mt-1">
                 <User className="absolute left-3 top-3.5 w-4 h-4 text-gray-400" />
                 <select 
@@ -132,12 +135,36 @@ function PDAModal({ pda, clients, onClose, onSave }) {
             </div>
 
             <div>
-              <label className="text-[10px] font-bold text-gray-400 uppercase">Vessel Name</label>
+              <label className="text-[10px] font-bold text-gray-400 uppercase">Weight</label>
+              <div className="relative mt-1">
+                <Weight className="absolute left-3 top-3.5 w-4 h-4 text-gray-400" />
+                <input required type="text" value={formData.weight} onChange={(e) => setFormData({...formData, weight: e.target.value})} className="w-full pl-10 p-3 bg-gray-50 border rounded-xl font-bold outline-buttonGradientPrimary" placeholder="Poids du navire" />
+              </div>
+            </div>
+
+            
+          </div>
+
+
+          {/* Section 2: Config & Days */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      
+            
+            <div>
+              <label className="text-[10px] font-bold text-gray-400 uppercase">Trip</label>
+              <div className="relative mt-1">
+                <Ship className="absolute left-3 top-3.5 w-4 h-4 text-gray-400" />
+                <input required type="text" value={formData.voyage} onChange={(e) => setFormData({...formData, voyage: e.target.value})} className="w-full pl-10 p-3 bg-gray-50 border rounded-xl font-bold outline-buttonGradientPrimary" placeholder="Numero de voyage" />
+              </div>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-gray-400 uppercase">Navire</label>
               <div className="relative mt-1">
                 <Ship className="absolute left-3 top-3.5 w-4 h-4 text-gray-400" />
                 <input required type="text" value={formData.vessel_name} onChange={(e) => setFormData({...formData, vessel_name: e.target.value})} className="w-full pl-10 p-3 bg-gray-50 border rounded-xl font-bold outline-buttonGradientPrimary" placeholder="Nom du navire" />
               </div>
             </div>
+
           </div>
 
           {/* Section 2: Config & Days */}
@@ -163,7 +190,7 @@ function PDAModal({ pda, clients, onClose, onSave }) {
                 <h3 className="font-black text-gray-800 text-[11px] uppercase tracking-tighter flex items-center gap-2">
                   <div className="w-1.5 h-4 bg-buttonGradientPrimary rounded-full"/> {cat.label}
                 </h3>
-                <button type="button" onClick={() => addItem(cat.id)} className="text-[10px] font-bold bg-white border border-indigo-100 text-indigo-600 px-4 py-1.5 rounded-full hover:bg-indigo-50 transition-all shadow-sm">+ Add Item</button>
+                <button type="button" onClick={() => addItem(cat.id)} className="text-[10px] font-bold bg-white border border-indigo-100 text-indigo-600 px-4 py-1.5 rounded-full hover:bg-indigo-50 transition-all shadow-sm">+ Ajouter un item</button>
               </div>
               <div className="space-y-3 px-2">
                 {formData.items.filter(i => i.category === cat.id).map((item, idx) => {

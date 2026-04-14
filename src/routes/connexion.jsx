@@ -90,6 +90,23 @@ function Connexion() {
 
             </form>
         </div>
+
+
+              {/* Mention de développement Professionnelle */}
+      <div className="absolute bottom-6 flex flex-col items-center gap-1 opacity-60 hover:opacity-100 transition-opacity duration-300">
+        <p className="text-[10px] uppercase tracking-[2px] text-grey-500 font-light">
+          Développé par
+        </p>
+        <a 
+          href="https://www.infinity.mr" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="text-sm font-semibold text-buttonGradientSecondary hover:text-buttonGradientPrimary transition-colors"
+        >
+          www.infinity.mr
+        </a>
+        <span className="text-[10px] text-grey-500">© 2026</span>
+      </div>
         <Toaster />
     </div>
   );

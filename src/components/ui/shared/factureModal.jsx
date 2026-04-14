@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Plus, Trash2, Ship, ListPlus, ShieldCheck, EyeOff, Calendar, Anchor, Box, Weight, Info, MessageSquare } from 'lucide-react';
+import { getRole } from '@/lib/utils';
 
 function FactureModal({ facture, clients = [], onClose, onSave }) {
   const [formData, setFormData] = useState({
@@ -17,6 +18,7 @@ function FactureModal({ facture, clients = [], onClose, onSave }) {
     remarks: '', // Commentaire sur le PDF (Client)
     commentaire: '', // Note interne (Système)
     tva: false,
+    is_excluding_customs: false,
     est_privee: false,
     devise: 'MRU',
     items: [{ libelle: '', prix_unitaire: '', quantite: 1 }]
@@ -41,6 +43,7 @@ function FactureModal({ facture, clients = [], onClose, onSave }) {
         // remarks: facture.remarks || '',
         commentaire: facture.commentaire || '',
         tva: facture.tva || false,
+        is_excluding_customs: facture.is_excluding_customs || false,
         est_privee: facture.est_privee || false,
         devise: facture.devise || 'MRU',
         items: facture.items ? facture.items.map(i => ({ 
@@ -50,6 +53,7 @@ function FactureModal({ facture, clients = [], onClose, onSave }) {
         })) : [{ libelle: '', prix_unitaire: '', quantite: 1 }]
       });
     }
+    console.log("Facture chargée dans le modal :", facture);
   }, [facture]);
 
   const updateItem = (index, field, value) => {
@@ -196,13 +200,17 @@ function FactureModal({ facture, clients = [], onClose, onSave }) {
         {/* FOOTER ACTIONS */}
         <div className="p-8 border-t bg-gray-50 flex flex-wrap justify-between items-center gap-6">
           <div className="flex gap-6 items-center">
-            <label className="flex items-center gap-2 cursor-pointer font-bold text-gray-600 text-sm">
+            <label className="flex items-center gap-2 cursor-pointer font-bold text-gray-600 text-xs">
                <input type="checkbox" checked={formData.tva} onChange={(e) => setFormData({...formData, tva: e.target.checked})} className="w-5 h-5 accent-indigo-600 rounded" /> TVA (16%)
             </label>
-            <label className="flex items-center gap-2 cursor-pointer font-bold text-red-600 text-sm bg-red-50 px-3 py-2 rounded-xl border border-red-100 hover:bg-red-100 transition-all">
-               <input type="checkbox" checked={formData.est_privee} onChange={(e) => setFormData({...formData, est_privee: e.target.checked})} className="w-5 h-5 accent-red-600 rounded" /> 
-               <EyeOff className="w-4 h-4"/> Facture Privée
+            <label className="flex items-center gap-2 cursor-pointer font-bold text-gray-600 text-xs">
+               <input type="checkbox" checked={formData.is_excluding_customs} onChange={(e) => setFormData({...formData, is_excluding_customs: e.target.checked})} className="w-5 h-5 accent-buttonGradientSecondary" /> Excluding Customs
             </label>
+            {getRole() === 'Directeur Général' && (
+              <label className="flex items-center gap-2 cursor-pointer font-bold text-gray-600 text-xs">
+                <input type="checkbox" checked={formData.est_privee} onChange={(e) => setFormData({...formData, est_privee: e.target.checked})} className="w-5 h-5 accent-red-500" /> Facture Privée (Non visible par le client)
+              </label>
+            )}
             <select value={formData.devise} onChange={(e) => setFormData({...formData, devise: e.target.value})} className="p-2 bg-white border rounded-lg font-bold text-sm outline-none focus:ring-2 focus:ring-indigo-500">
               <option value="MRU">MRU</option>
               <option value="EUR">EUR</option>

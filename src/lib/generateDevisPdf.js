@@ -303,7 +303,7 @@ export const generateDevisPDF = async (facture, client) => {
   doc.setFontSize(7);
   doc.setFont('helvetica', 'italic');
   doc.setTextColor(0, 0, 0);
-  doc.text('EXCLUDING: ALL CUSTOMS DUTIES AND TAXES', 14, pageHeight - 20);
+  doc.text(facture.is_excluding_customs ? 'EXCLUDING: ALL CUSTOMS DUTIES AND TAXES' : 'INCLUDING: ALL CUSTOMS DUTIES AND TAXES', 14, pageHeight - 20);
   
   doc.setTextColor(150, 150, 150);
   doc.text('Siège social : SOCO BMCI N°0190 Moughata de Tevragh Zeina - Nouakchott - Mauritanie', 105, pageHeight - 10, { align: 'center' });
