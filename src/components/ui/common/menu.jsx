@@ -76,7 +76,7 @@ function SideBar({changeVisibility}) {
               {hasPermission("devis") && <MyNavLink route="devis" label={t("Devis")} icon={FaFile}/>} 
               {hasPermission("factures") && <MyNavLink route="factures" label={t("Factures")} icon={FaFile}/>} 
               {!hasPermission("bon_commande") ?  <></> : <MyNavLink route="bon_de_commande" label={t("Bon de Commande")} icon={HiNewspaper}/>} 
-              {!hasPermission("bad") ?  <></> : <MyNavLink route="bad" label={t("Bons à Délivrer")} icon={HiNewspaper}/>} 
+              {!hasPermission("bad") ?  <></> : <MyNavLink route="bad" label={t("BAD")} icon={HiNewspaper}/>} 
               {!hasPermission("pda") ?  <></> : <MyNavLink route="pda" label={t("PDA")} icon={HiNewspaper}/>} 
               {(hasPermission("archives")) && <MyNavLink route="archives" label={t("Archives")} icon={FaArchive}/>}
               {hasPermission("clients") && <MyNavLink route="clients" label={t("Clients")} icon={FaUsers}/>} 
