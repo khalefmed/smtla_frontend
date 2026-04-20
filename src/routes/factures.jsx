@@ -318,7 +318,7 @@ function Factures() {
                         </button>
                       )}
 
-                      {peutSupprimer && f.status !== 'valide' && (
+                      {peutSupprimer && (
                         <button onClick={() => handleDelete(f.id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg" title="Supprimer">
                           <Trash2 className="w-5 h-5" />
                         </button>

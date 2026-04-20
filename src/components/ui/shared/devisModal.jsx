@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Trash2, Ship, ListPlus, Calendar, Box, Weight, Info, Database } from 'lucide-react';
+import { X, Trash2, Ship, ListPlus, Calendar, Box, Weight, Info } from 'lucide-react';
 
 function DevisModal({ devis, clients, onClose, onSave }) {
   const [formData, setFormData] = useState({
@@ -39,13 +39,26 @@ function DevisModal({ devis, clients, onClose, onSave }) {
         bl: devis.bl || '',
         tva: devis.tva || false,
         devise: devis.devise || 'MRU',
-        // remarks: devis.remarks || '',
         commentaire: devis.commentaire || '',
         items: devis.items?.map(i => ({ libelle: i.libelle, prix_unitaire: i.prix_unitaire, quantite: i.quantite })) || [{ libelle: '', prix_unitaire: '', quantite: 1 }]
       });
     }
-    console.log("Loaded Devis into form:", devis);
   }, [devis]);
+
+  // FONCTION DE NETTOYAGE AVANT ENVOI
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    
+    // On crée une copie des données pour ne pas modifier l'état visuel du formulaire
+    const cleanedData = {
+      ...formData,
+      // Si ETA ou ETD sont vides, on envoie null pour que Django accepte
+      eta: formData.eta === "" ? null : formData.eta,
+      etd: formData.etd === "" ? null : formData.etd,
+    };
+    
+    onSave(cleanedData);
+  };
 
   const updateItem = (index, field, value) => {
     const newItems = [...formData.items];
@@ -69,7 +82,7 @@ function DevisModal({ devis, clients, onClose, onSave }) {
           <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-full transition-colors"><X className="w-5 h-5" /></button>
         </div>
 
-        <form onSubmit={(e) => { e.preventDefault(); onSave(formData); }} className="overflow-y-auto p-8 space-y-8">
+        <form onSubmit={handleSubmit} className="overflow-y-auto p-8 space-y-8">
           {/* Section 1: Identité */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-1">
@@ -111,26 +124,36 @@ function DevisModal({ devis, clients, onClose, onSave }) {
             </div>
           </div>
 
-          {/* Section 3: Escales */}
+          {/* Section 3: Escales (Modification des REQUIRED ici) */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100">
             <div><label className="text-[10px] font-bold text-buttonGradientSecondary uppercase">Port d'arrivée</label><input required type="text" value={formData.port_arrive} onChange={(e) => setFormData({...formData, port_arrive: e.target.value})} className="w-full p-2 bg-white border rounded-lg text-sm" /></div>
             <div><label className="text-[10px] font-bold text-buttonGradientSecondary uppercase">Voyage</label><input required type="text" value={formData.voyage} onChange={(e) => setFormData({...formData, voyage: e.target.value})} className="w-full p-2 bg-white border rounded-lg text-sm" /></div>
-            <div><label className="text-[10px] font-bold text-buttonGradientSecondary uppercase flex items-center gap-1"><Calendar className="w-3 h-3"/> ETA</label><input required type="datetime-local" value={formData.eta} onChange={(e) => setFormData({...formData, eta: e.target.value})} className="w-full p-2 bg-white border rounded-lg text-sm" /></div>
-            <div><label className="text-[10px] font-bold text-buttonGradientSecondary uppercase flex items-center gap-1"><Calendar className="w-3 h-3"/> ETD</label><input required type="datetime-local" value={formData.etd} onChange={(e) => setFormData({...formData, etd: e.target.value})} className="w-full p-2 bg-white border rounded-lg text-sm" /></div>
+            <div><label className="text-[10px] font-bold text-buttonGradientSecondary uppercase flex items-center gap-1"><Calendar className="w-3 h-3"/> ETA</label><input type="datetime-local" value={formData.eta} onChange={(e) => setFormData({...formData, eta: e.target.value})} className="w-full p-2 bg-white border rounded-lg text-sm" /></div>
+            <div><label className="text-[10px] font-bold text-buttonGradientSecondary uppercase flex items-center gap-1"><Calendar className="w-3 h-3"/> ETD</label><input type="datetime-local" value={formData.etd} onChange={(e) => setFormData({...formData, etd: e.target.value})} className="w-full p-2 bg-white border rounded-lg text-sm" /></div>
           </div>
 
-          {/* Section 4: Prestations */}
+          {/* Section 4: Prestations (Ajout des labels d'en-tête) */}
           <div className="space-y-4">
             <div className="flex justify-between items-center border-b pb-2">
               <h3 className="font-bold text-gray-800 flex items-center gap-2 text-sm uppercase"><ListPlus className="w-4 h-4 text-buttonGradientSecondary"/> Prestations / Services</h3>
               <button type="button" onClick={addItem} className="text-xs font-bold text-buttonGradientSecondary hover:bg-indigo-50 px-3 py-1 rounded-lg">+ Ajouter une ligne</button>
             </div>
+            
+            {/* EN-TÊTE DES COLONNES */}
+            <div className="flex gap-4 px-2">
+              <div className="flex-1 text-[10px] font-bold text-gray-400 uppercase">Désignation / Service</div>
+              <div className="w-32 text-[10px] font-bold text-gray-400 uppercase text-right">Prix Unitaire</div>
+              <div className="w-16 text-[10px] font-bold text-gray-400 uppercase text-center">Qté</div>
+              <div className="w-28 text-[10px] font-bold text-gray-400 uppercase text-right">Total HT</div>
+              <div className="w-8"></div>
+            </div>
+
             <div className="space-y-3">
               {formData.items.map((item, index) => (
                 <div key={index} className="flex gap-4 items-center animate-in fade-in">
                   <input required placeholder="Désignation" value={item.libelle} onChange={(e) => updateItem(index, 'libelle', e.target.value)} className="flex-1 p-2 border-b outline-none focus:border-buttonGradientPrimary text-sm" />
-                  <input required type="number" placeholder="P.U" value={item.prix_unitaire} onChange={(e) => updateItem(index, 'prix_unitaire', e.target.value)} className="w-32 p-2 border-b text-right outline-none focus:border-buttonGradientPrimary text-sm font-bold" />
-                  <input required type="number" placeholder="Qté" value={item.quantite} onChange={(e) => updateItem(index, 'quantite', e.target.value)} className="w-16 p-2 border-b text-center outline-none focus:border-buttonGradientPrimary text-sm" />
+                  <input required type="number" placeholder="0.00" value={item.prix_unitaire} onChange={(e) => updateItem(index, 'prix_unitaire', e.target.value)} className="w-32 p-2 border-b text-right outline-none focus:border-buttonGradientPrimary text-sm font-bold" />
+                  <input required type="number" placeholder="1" value={item.quantite} onChange={(e) => updateItem(index, 'quantite', e.target.value)} className="w-16 p-2 border-b text-center outline-none focus:border-buttonGradientPrimary text-sm" />
                   <div className="w-28 text-right font-black text-buttonGradientSecondary text-sm">{(Number(item.prix_unitaire) * Number(item.quantite) || 0).toLocaleString()}</div>
                   <button type="button" onClick={() => removeItem(index)} className="p-2 text-red-300 hover:text-red-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
                 </div>
@@ -138,16 +161,10 @@ function DevisModal({ devis, clients, onClose, onSave }) {
             </div>
           </div>
 
-          {/* Section 5: Commentaires & Remarques */}
-          <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-gray-400 uppercase">Remarques (Visible sur PDF)</label>
-              <textarea value={formData.commentaire} onChange={(e) => setFormData({...formData, commentaire: e.target.value})} rows="3" className="w-full p-3 bg-gray-50 rounded-xl text-sm outline-none border focus:border-indigo-100" placeholder="Conditions de paiement, validité..."></textarea>
-            </div>
-            {/* <div className="space-y-1">
-              <label className="text-[10px] font-bold text-indigo-400 uppercase flex items-center gap-1"><Database className="w-3 h-3"/> Commentaires Internes (Privé)</label>
-              <textarea value={formData.commentaire} onChange={(e) => setFormData({...formData, commentaire: e.target.value})} rows="3" className="w-full p-3 bg-indigo-50/30 border border-indigo-50 rounded-xl text-sm outline-none focus:border-indigo-200" placeholder="Notes pour l'équipe..."></textarea>
-            </div> */}
+          {/* Section 5: Commentaires */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-gray-400 uppercase">Remarques (Visible sur PDF)</label>
+            <textarea value={formData.commentaire} onChange={(e) => setFormData({...formData, commentaire: e.target.value})} rows="3" className="w-full p-3 bg-gray-50 rounded-xl text-sm outline-none border focus:border-indigo-100" placeholder="Conditions de paiement, validité..."></textarea>
           </div>
         </form>
 
@@ -169,7 +186,7 @@ function DevisModal({ devis, clients, onClose, onSave }) {
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total Global TTC</p>
               <p className="text-3xl font-bold text-buttonGradientSecondary">{calculateTotal().toLocaleString()} <span className="text-sm font-normal text-gray-400">{formData.devise}</span></p>
             </div>
-            <button onClick={(e) => { e.preventDefault(); onSave(formData); }} className="px-10 py-4 bg-buttonGradientSecondary text-white rounded-2xl font-bold hover:opacity-90 shadow-lg shadow-indigo-200 transition-all active:scale-95">
+            <button onClick={handleSubmit} className="px-10 py-4 bg-buttonGradientSecondary text-white rounded-2xl font-bold hover:opacity-90 shadow-lg shadow-indigo-200 transition-all active:scale-95">
               {devis ? "Mettre à jour" : "Générer le Devis"}
             </button>
           </div>
