@@ -34,22 +34,27 @@ export  function BAD() {
   const peutModifierOuSupprimer = ["Directeur des Opérations", "Directeur Général", "Agent de Port"].includes(currentRole);
 
   const fetchInitialData = async () => {
-    try {
-      setLoading(true);
-      // Récupération globale pour alimenter le tableau et les formulaires
-      const [resBAD, resClients, resFactures] = await Promise.all([
-        api.get("bads/"),
-        api.get("clients/"),
-        api.get("factures/")
-      ]);
-      setListe(resBAD.data);
-      setClients(resClients.data);
-      setFactures(resFactures.data);
-    } catch (error) {
-      toast.error(t("Erreur lors du chargement des données logistiques"));
-    } finally {
-      setLoading(false);
-    }
+      try {
+        setLoading(true);
+        const [resBAD, resClients, resFactures] = await Promise.all([
+          api.get("bads/"),
+          api.get("clients/"),
+          api.get("factures/")
+        ]);
+
+        setListe(resBAD.data);
+        setClients(resClients.data);
+
+        // On filtre pour ne garder que les factures dont le statut est 'paye'
+        // Vérifiez si votre champ s'appelle 'status', 'etat' ou 'is_paid'
+        const facturesPayees = resFactures.data.filter(f => f.status === 'paye');
+        setFactures(facturesPayees);
+
+      } catch (error) {
+        toast.error(t("Erreur lors du chargement des données logistiques"));
+      } finally {
+        setLoading(false);
+      }
   };
 
   const fetchBADsOnly = async () => {
