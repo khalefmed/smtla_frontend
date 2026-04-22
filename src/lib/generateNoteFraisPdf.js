@@ -4,20 +4,16 @@ import logo from '@/assets/logo.png';
 import signatureDG from '@/assets/signatures/directeur_general.png';
 import signatureComptable from '@/assets/signatures/comptable.png';
 
-/**
- * Formatage manuel des nombres pour garantir un espace standard 
- * comme séparateur de milliers et éviter l'erreur du caractère "/".
- */
 const formatPrix = (valeur) => {
   if (valeur === undefined || valeur === null || isNaN(valeur)) return '0,00';
   const num = Number(valeur);
   let [entier, decimal] = num.toFixed(2).split('.');
-  // Utilise un espace standard (Unicode \u0020) pour les milliers
   entier = entier.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
   return `${entier},${decimal}`;
 };
 
 export function generateNoteFraisPdf(note) {
+  var eb = note.expression_besoin_detail;
   const doc = new jsPDF('p', 'mm', 'a4');
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -33,7 +29,7 @@ export function generateNoteFraisPdf(note) {
   const montantTTC = montantHT + montantTVA;
 
   const dateFormatted = note.date_creation ? new Date(note.date_creation).toLocaleDateString('fr-FR') : new Date().toLocaleDateString('fr-FR');
-  const etaFormatted = note.eta ? new Date(note.eta).toLocaleString('fr-FR') : '-';
+  const etaFormatted = eb.eta ? new Date(eb.eta).toLocaleString('fr-FR') : '-';
 
   // --- 2. EN-TÊTE ---
   try {
@@ -47,21 +43,18 @@ export function generateNoteFraisPdf(note) {
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.text(`Réf: ${note.reference || ''}`, pageWidth - 14, 25, { align: 'right' }); 
-  
   doc.setFontSize(8);
-  doc.text(`EB Source: ${note.expression_besoin_reference || 'N/A'}`, pageWidth - 14, 30, { align: 'right' });
+  doc.text(`EB Source: ${eb.reference || 'N/A'}`, pageWidth - 14, 30, { align: 'right' });
 
   // --- 3. BLOCS INFOS ---
-  const startYInfos = 35;
-
   autoTable(doc, {
-    startY: startYInfos,
+    startY: 35,
     margin: { right: 110 },
     body: [
       ['Date Note', dateFormatted],
-      ['Demandeur', note.createur_nom || 'Non précisé'],
+      ['Demandeur', eb.nom_demandeur || '-'],
       ['Statut', note.status_display || 'En attente'],
-      ['Référence EB', note.expression_besoin_reference || '-']
+      ['Référence EB', eb.reference || '-']
     ],
     theme: 'grid',
     styles: { fontSize: 8, cellPadding: 1.2 },
@@ -69,13 +62,13 @@ export function generateNoteFraisPdf(note) {
   });
 
   autoTable(doc, {
-    startY: startYInfos,
+    startY: 35,
     margin: { left: 110 },
     body: [
-      ['BL / AWB', note.bl_awb || '-'],
-      ['Navire', note.navire || '-'],
+      ['BL / AWB', eb.bl_awb || '-'],
+      ['Navire', eb.navire || '-'],
       ['ETA', etaFormatted],
-      ['Client', note.client_beneficiaire_nom || '-']
+      ['Client', eb.client_beneficiaire_nom || '-']
     ],
     theme: 'grid',
     styles: { fontSize: 8, cellPadding: 1.2 },
@@ -112,7 +105,7 @@ export function generateNoteFraisPdf(note) {
 
   // --- 5. RÉCAPITULATIF FINANCIER ---
   autoTable(doc, {
-    startY: doc.lastAutoTable.finalY + 10,
+    startY: doc.lastAutoTable.finalY + 5,
     body: [
       ['RATE OF BCM', '', '', '', 'MONTANT HT', `${formatPrix(montantHT)} ${currencyLabel}`],
       ['1000 XOF', '1 USD', '1 EURO', 'MRU', 'TVA 16%', `${montantTVA > 0 ? formatPrix(montantTVA) : '-'} ${currencyLabel}`],
@@ -133,17 +126,26 @@ export function generateNoteFraisPdf(note) {
     }
   });
 
-  // --- 6. SIGNATURES ---
+  // --- 6. SIGNATURES (DYNAMIQUE) ---
+  let finalYSignatures = doc.lastAutoTable.finalY + 10;
+
+  if (finalYSignatures > pageHeight - 70) {
+    doc.addPage();
+    finalYSignatures = 20;
+  }
+
+  console.log(note)
+
   autoTable(doc, {
-    startY: pageHeight - 75, 
+    startY: finalYSignatures, 
     head: [['DIRECTEUR GÉNÉRAL', 'FINANCE / COMPTABILITÉ', 'BÉNÉFICIAIRE']],
     body: [['', '', '']], 
     theme: 'grid',
-    styles: { minCellHeight: 25, halign: 'center', valign: 'middle', fontSize: 9, fontStyle: 'bold' },
+    styles: { minCellHeight: 30, halign: 'center', valign: 'middle', fontSize: 9, fontStyle: 'bold' },
     headStyles: { fillColor: [245, 245, 245], textColor: blackText, minCellHeight: 8 },
     didDrawCell: (data) => {
       if (note.status === 'valide' && data.section === 'body') {
-        const imgSize = 22;
+        const imgSize = 25;
         const posX = data.cell.x + (data.cell.width / 2) - (imgSize / 2);
         const posY = data.cell.y + (data.cell.height / 2) - (imgSize / 2);
 
@@ -158,8 +160,17 @@ export function generateNoteFraisPdf(note) {
     }
   });
 
-  // --- 7. TRAÇABILITÉ & PIED DE PAGE ---
-  const yTrace = pageHeight - 25;
+  // --- 7. TRAÇABILITÉ (DYNAMIQUE) ---
+  // On place le texte 5mm sous le tableau de signatures
+  let yTrace = doc.lastAutoTable.finalY + 5;
+  
+  // Si le texte de traçabilité risque de dépasser le pied de page social, 
+  // on le bloque à une position maximum
+  const maxTraceY = pageHeight - 25;
+  if (yTrace > maxTraceY) {
+    yTrace = maxTraceY;
+  }
+
   doc.setFontSize(8);
   doc.setTextColor(120, 120, 120);
   doc.setFont('helvetica', 'italic');
@@ -168,8 +179,7 @@ export function generateNoteFraisPdf(note) {
     ? note.createur.prenom + ' ' + note.createur.nom 
     : 'Système';
 
-  const now = new Date(note.date_creation || Date.now());
-  const dateGen = now.toLocaleString('fr-FR', {
+  const dateGen = new Date().toLocaleString('fr-FR', {
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit'
   });
@@ -177,8 +187,10 @@ export function generateNoteFraisPdf(note) {
   doc.text(`Note établie par : ${createur}`, 14, yTrace);
   doc.text(`Document généré le : ${dateGen}`, 14, yTrace + 4);
 
+  // --- 8. PIED DE PAGE FIXE (SIÈGE SOCIAL) ---
   doc.setFontSize(7);
   doc.setTextColor(150, 150, 150);
+  doc.setFont('helvetica', 'normal');
   doc.text('Siège social : SOCO BMCI N°0190 Moughata de Tevragh Zeina - Nouakchott - Mauritanie', pageWidth / 2, pageHeight - 10, { align: 'center' });
 
   doc.save(`NoteFrais_${note.reference}.pdf`);
