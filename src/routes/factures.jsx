@@ -198,6 +198,7 @@ function Factures() {
 
   const peutValider = ["Comptable", "Directeur Général"].includes(currentRole);
   const peutSupprimer = ["Directeur Général"].includes(currentRole);
+  const peutModifier = ["Comptable", "Directeur Général"].includes(currentRole);
 
   const fetchData = async () => {
     try {
@@ -416,6 +417,12 @@ const handlePay = async (id, data) => {
                       <button onClick={() => handleDownloadPDF(f)} className={`p-2 rounded-lg transition-colors ${(f.status === 'valide' || f.status === 'paye') ? 'text-gray-600 hover:text-buttonGradientSecondary hover:bg-indigo-50' : 'text-gray-200 cursor-not-allowed'}`}>
                         <FileText className="w-5 h-5" />
                       </button>
+
+                      {peutModifier && (
+                        <button onClick={() => { setSelectedFacture(f); setShowFactureModal(true); console.log("clicked") }} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg">
+                          <Edit3 className="w-5 h-5" />
+                        </button>
+                      )}
 
                       {f.status !== 'paye' && (
                         <button onClick={() => handleDelete(f.id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg">

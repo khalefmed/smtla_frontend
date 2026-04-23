@@ -167,21 +167,37 @@ function NotesDeFrais() {
     }
   };
 
-  const handleSave = async (formData) => { 
-    try {
-      if (selectedNote) {
-        await api.put(`notes-frais/${selectedNote.id}/`, formData);
-        toast.success(t("Modifications enregistrées"));
-      } else {
-        await api.post(`notes-frais/depuis-expression/${formData.expression_besoin_id}/`);
-        toast.success(t("Note de frais générée avec succès !"));
-      }
-      setShowModal(false);
-      fetchNotes();
-    } catch (error) {
-      toast.error(t("Une erreur est survenue lors de l'enregistrement"));
+const handleSave = async (formData) => { 
+  try {
+    // Formatage pour correspondre aux attentes de Django (ForeignKey)
+    const payload = {
+      ...formData,
+      expression_besoin_id: selectedNote.expression_besoin_detail.id, // On mappe l'ID vers la clé attendue
+    };
+
+    if (selectedNote) {
+      console.log("Note : ", selectedNote.expression_besoin_detail.id);
+      console.log("Payload : ", payload);
+
+      await api.put(`notes-frais/${selectedNote.id}/`, payload);
+      toast.success("Modifications enregistrées");
+    } else {
+      await api.post(`notes-frais/`, payload); 
+      toast.success("Note de frais générée avec succès !");
     }
-  };
+
+    setShowModal(false);
+    fetchNotes();
+  } catch (error) {
+    console.error("Save Error:", error.response?.data || error);
+    
+    const errorMsg = error.response?.data?.expression_besoin?.[0] 
+                     ? "L'Expression de besoin est requise" 
+                     : "Une erreur est survenue lors de l'enregistrement";
+    toast.error(errorMsg);
+  }
+};
+
 
   const handleExportPdf = (note) => {
     if (note.status !== 'valide') {

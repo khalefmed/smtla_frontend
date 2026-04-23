@@ -52,9 +52,9 @@ export function generateNoteFraisPdf(note) {
     margin: { right: 110 },
     body: [
       ['Date Note', dateFormatted],
-      ['Demandeur', eb.nom_demandeur || '-'],
-      ['Statut', note.status_display || 'En attente'],
-      ['Référence EB', eb.reference || '-']
+      ['Demandeur', eb.nom_demandeur || '---'],
+      ['Direction', eb.direction || '---'],
+      ['Affectation', eb.affectation || '---']
     ],
     theme: 'grid',
     styles: { fontSize: 8, cellPadding: 1.2 },
@@ -65,10 +65,10 @@ export function generateNoteFraisPdf(note) {
     startY: 35,
     margin: { left: 110 },
     body: [
-      ['BL / AWB', eb.bl_awb || '-'],
-      ['Navire', eb.navire || '-'],
+      ['BL / AWB', eb.bl_awb || '---'],
+      ['Navire', eb.navire || '---'],
       ['ETA', etaFormatted],
-      ['Client', eb.client_beneficiaire_nom || '-']
+      ['Client', eb.client_beneficiaire_nom || '---']
     ],
     theme: 'grid',
     styles: { fontSize: 8, cellPadding: 1.2 },
