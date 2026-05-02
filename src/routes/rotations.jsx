@@ -113,7 +113,8 @@ function Rotations() {
       r.client_nom?.toLowerCase().includes(q) || 
       r.type_materiel_nom?.toLowerCase().includes(q) ||
       r.numero_bordereau?.toLowerCase().includes(q) ||
-      r.navire?.toLowerCase().includes(q)
+      r.navire?.toLowerCase().includes(q) ||
+      r.camion?.toLowerCase().includes(q)
     );
   }, [liste, stocks, search, activeTab]);
 

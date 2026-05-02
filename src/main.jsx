@@ -38,6 +38,7 @@ import Rotations from "./routes/rotations";
 import { BAD } from "./routes/bad";
 import Rapports from "./routes/rapport";
 import PDA from "./routes/pda";
+import FDA from "./routes/fda";
 
 
 
@@ -85,6 +86,10 @@ const router = createBrowserRouter([
       {
         path: "/pda",
         element: <ProtectedRoute component={PDA} />,
+      },
+      {
+        path: "/fda",
+        element: <ProtectedRoute component={FDA} />,
       },
       {
         path: "/groupes",
