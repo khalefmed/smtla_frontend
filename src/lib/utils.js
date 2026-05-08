@@ -74,7 +74,7 @@ export const hasPermission = (page) => {
     'Agent Port' : ['rotations', 'clients', 'types de materiel', 'expression_besoin'],
     'Comptable' : ['factures', 'note_frais', 'devis', 'clients', 'expression_besoin', 'fournisseurs', 'bon_commande'],
     'Directeur des Opérations' : ['factures', 'note_frais', 'devis', 'clients', 'rotations', 'expression_besoin', 'fournisseurs', 'types de materiel', 'bon_commande', 'bad', 'archives', 'Rapports', 'pda', 'fda'],
-    'Directeur Général' : ['factures', 'note_frais', 'expression_besoin', 'devis', 'clients', 'rotations', 'fournisseurs', 'types de materiel', 'bon_commande', 'archives', 'pda', 'fda'],
+    'Directeur Général' : ['factures', 'note_frais', 'expression_besoin', 'devis', 'clients', 'rotations', 'fournisseurs', 'types de materiel', 'bon_commande', 'archives', 'pda', 'fda',  'Rapports', 'bad'],
   }
 
 
