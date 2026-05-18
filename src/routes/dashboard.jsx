@@ -6,7 +6,7 @@ import {
   Users, Package, FileText, Wallet, 
   Clock, ArrowDownCircle, ArrowUpCircle, 
   LayoutDashboard, AlertCircle, ChevronRight,
-  ClipboardList, Receipt, Banknote
+  ClipboardList, Receipt, Banknote, TrendingUp, Coins
 } from 'lucide-react';
 import { getRole } from '@/lib/utils';
 
@@ -14,9 +14,8 @@ function Dashboard() {
   const { t } = useTranslation();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const role = getRole(); // Récupère le rôle (ex: 'Assistant', 'Comptable', etc.)
+  const role = getRole();
 
-  // Mapping des permissions selon votre structure
   const users_permissions = {
     'Assistant' : ['note_frais', 'expression_besoin'],
     'Agent Port' : ['rotations', 'clients', 'types de materiel', 'expression_besoin'],
@@ -25,10 +24,7 @@ function Dashboard() {
     'Directeur Général' : ['factures', 'note_frais', 'expression_besoin', 'devis', 'clients', 'rotations', 'fournisseurs', 'types de materiel', 'bon_commande', 'archives'],
   };
 
-  // Fonction utilitaire pour vérifier si l'utilisateur a accès à une fonctionnalité
-  const hasAccess = (feature) => {
-    return users_permissions[role]?.includes(feature);
-  };
+  const hasAccess = (feature) => users_permissions[role]?.includes(feature);
 
   useEffect(() => {
     fetchStats();
@@ -64,35 +60,61 @@ function Dashboard() {
         </p>
       </div>
 
-      {/* CARTES DE STATISTIQUES RAPIDES (FILTRÉES) */}
+      {/* --- SECTION RÉSERVÉE AU DG : FINANCES GLOBALES --- */}
+      {role === 'Directeur Général' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-4 duration-500">
+          {/* Bloc Factures Payées */}
+          <div className="bg-white p-6 rounded-3xl border border-emerald-100 shadow-sm bg-gradient-to-br from-white to-emerald-50/30">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-emerald-500 rounded-xl text-white">
+                <TrendingUp size={20} />
+              </div>
+              <h3 className="font-black text-gray-800 uppercase text-xs tracking-widest">{t("Total Factures Payées")}</h3>
+            </div>
+            <div className="flex flex-wrap gap-6">
+              {stats?.factures?.totaux_payes_par_devise && Object.entries(stats.factures.totaux_payes_par_devise).map(([devise, montant]) => (
+                <div key={devise} className="flex flex-col">
+                  <span className="text-[10px] font-bold text-emerald-600/70">{devise}</span>
+                  <span className="text-2xl font-bold text-gray-900">{montant.toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Bloc Notes de Frais Validées */}
+          <div className="bg-white p-6 rounded-3xl border border-blue-100 shadow-sm bg-gradient-to-br from-white to-blue-50/30">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-blue-600 rounded-xl text-white">
+                <Coins size={20} />
+              </div>
+              <h3 className="font-black text-gray-800 uppercase text-xs tracking-widest">{t("Total Frais Validés")}</h3>
+            </div>
+            <div className="flex flex-wrap gap-6">
+              {stats?.notes_frais?.totaux_par_devise && Object.entries(stats.notes_frais.totaux_par_devise).map(([devise, montant]) => (
+                <div key={devise} className="flex flex-col">
+                  <span className="text-[10px] font-bold text-blue-600/70">{devise}</span>
+                  <span className="text-2xl font-bold text-gray-900">{montant.toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CARTES DE STATISTIQUES RAPIDES */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {hasAccess('rotations') && (
           <>
-            <StatCard 
-              title={t("Rotations Entrantes")} 
-              value={stats?.rotations?.total_entrantes ?? 0} 
-              icon={<ArrowDownCircle />} 
-              color="bg-green-500" 
-            />
-            <StatCard 
-              title={t("Rotations Sortantes")} 
-              value={stats?.rotations?.total_sortantes ?? 0} 
-              icon={<ArrowUpCircle />} 
-              color="bg-orange-500" 
-            />
+            <StatCard title={t("Rotations Entrantes")} value={stats?.rotations?.total_entrantes ?? 0} icon={<ArrowDownCircle />} color="bg-green-500" />
+            <StatCard title={t("Rotations Sortantes")} value={stats?.rotations?.total_sortantes ?? 0} icon={<ArrowUpCircle />} color="bg-orange-500" />
           </>
         )}
         {hasAccess('clients') && (
-          <StatCard 
-            title={t("Clients Actifs")} 
-            value={stats?.clients?.total ?? 0} 
-            icon={<Users />} 
-            color="bg-indigo-600" 
-          />
+          <StatCard title={t("Clients Actifs")} value={stats?.clients?.total ?? 0} icon={<Users />} color="bg-indigo-600" />
         )}
       </div>
 
-      {/* SECTION STOCK DÉTAILLÉ (Visible si accès aux rotations) */}
+      {/* SECTION STOCK DÉTAILLÉ */}
       {hasAccess('rotations') && (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="p-6 border-b border-gray-50 bg-gray-50/30">
@@ -112,121 +134,97 @@ function Dashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {stats?.stocks_par_client?.length > 0 ? (
-                  stats.stocks_par_client.map((clientData, clientIndex) => (
-                    <Fragment key={clientIndex}>
-                      {clientData.types.map((type, typeIndex) => (
-                        <tr key={`${clientIndex}-${typeIndex}`} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-8 py-4">
-                            {typeIndex === 0 && <span className="font-bold text-gray-900 uppercase text-sm">{clientData.client}</span>}
-                          </td>
-                          <td className="px-6 py-4 font-bold text-gray-600"><ChevronRight className="inline w-4 h-4 mr-1 text-gray-300" />{type.type_materiel}</td>
-                          <td className="px-6 py-4 text-center">
-                            <span className={`text-lg font-bold ${type.quantite_disponible > 0 ? 'text-indigo-600' : 'text-red-400'}`}>{type.quantite_disponible}</span>
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            {type.quantite_disponible <= 5 && <span className="text-[10px] font-bold text-orange-500 bg-orange-50 px-2 py-1 rounded">STOCK FAIBLE</span>}
-                          </td>
-                        </tr>
-                      ))}
-                    </Fragment>
-                  ))
-                ) : (
-                  <tr><td colSpan="4" className="px-6 py-12 text-center text-gray-400 italic font-medium">{t("Aucun stock enregistré.")}</td></tr>
-                )}
+                {stats?.stocks_par_client?.map((clientData, clientIndex) => (
+                  <Fragment key={clientIndex}>
+                    {clientData.types.map((type, typeIndex) => (
+                      <tr key={`${clientIndex}-${typeIndex}`} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-8 py-4">
+                          {typeIndex === 0 && <span className="font-bold text-gray-900 uppercase text-sm">{clientData.client}</span>}
+                        </td>
+                        <td className="px-6 py-4 font-bold text-gray-600"><ChevronRight className="inline w-4 h-4 mr-1 text-gray-300" />{type.type_materiel}</td>
+                        <td className="px-6 py-4 text-center">
+                          <span className={`text-lg font-bold ${type.quantite_disponible > 0 ? 'text-indigo-600' : 'text-red-400'}`}>{type.quantite_disponible}</span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          {type.quantite_disponible <= 5 && <span className="text-[10px] font-bold text-orange-500 bg-orange-50 px-2 py-1 rounded">STOCK FAIBLE</span>}
+                        </td>
+                      </tr>
+                    ))}
+                  </Fragment>
+                ))}
               </tbody>
             </table>
           </div>
         </div>
       )}
 
-      {/* SECTION DES LISTES EN ATTENTE (GRID DYNAMIQUE SELON ACCÈS) */}
+      {/* SECTION DES LISTES EN ATTENTE */}
       <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6">
-        
-        {/* 1. EXPRESSIONS DE BESOINS */}
         {hasAccess('expression_besoin') && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="p-5 border-b border-gray-50 flex items-center justify-between bg-yellow-50/30">
-              <h3 className="font-bold text-gray-900 flex items-center gap-2 uppercase tracking-tighter text-sm">
-                <ClipboardList className="text-yellow-600 w-5 h-5" />
-                {t("EB en attente")} ({stats?.expressions_besoin?.en_attente})
-              </h3>
-            </div>
-            <div className="max-h-[350px] overflow-y-auto">
-              {stats?.expressions_besoin?.liste_en_attente?.length > 0 ? (
-                stats.expressions_besoin.liste_en_attente.map((eb) => (
-                  <div key={eb.id} className="p-4 border-b border-gray-50 hover:bg-gray-50 transition-all flex justify-between items-center">
-                    <div>
-                      <p className="font-bold text-gray-900 text-sm">{eb.demandeur_nom || "Agent"}</p>
-                      <p className="text-[11px] text-gray-500 font-medium">{new Date(eb.date_demande).toLocaleDateString()}</p>
-                    </div>
-                    <span className="text-xs font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded">#{eb.id}</span>
-                  </div>
-                ))
-              ) : (
-                <div className="p-8 text-center text-gray-400 text-sm font-medium">{t("Aucune demande")}</div>
-              )}
-            </div>
-          </div>
+          <ListCard 
+            title={t("EB en attente")} 
+            count={stats?.expressions_besoin?.en_attente} 
+            icon={<ClipboardList className="text-yellow-600" />} 
+            data={stats?.expressions_besoin?.liste_en_attente}
+            bgColor="bg-yellow-50/30"
+          />
         )}
 
-        {/* 2. DEVIS EN ATTENTE */}
         {hasAccess('devis') && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="p-5 border-b border-gray-50 flex items-center justify-between bg-blue-50/30">
-              <h3 className="font-bold text-gray-900 flex items-center gap-2 uppercase tracking-tighter text-sm">
-                <Receipt className="text-blue-600 w-5 h-5" />
-                {t("Devis en attente")} ({stats?.devis?.en_attente})
-              </h3>
-            </div>
-            <div className="max-h-[350px] overflow-y-auto">
-              {stats?.devis?.liste_en_attente?.length > 0 ? (
-                stats.devis.liste_en_attente.map((devis) => (
-                  <div key={devis.id} className="p-4 border-b border-gray-50 hover:bg-gray-50 transition-all flex justify-between items-center">
-                    <div>
-                      <p className="font-black text-gray-900 text-sm uppercase truncate max-w-[150px]">{devis.client_nom}</p>
-                      <p className="text-[10px] text-gray-400 font-bold">{devis.numero_devis}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-black text-emerald-600">{Number(devis.montant_total).toLocaleString()} MRU</p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="p-8 text-center text-gray-400 text-sm font-medium">{t("Aucun devis")}</div>
-              )}
-            </div>
-          </div>
+          <ListCard 
+            title={t("Devis en attente")} 
+            count={stats?.devis?.en_attente} 
+            icon={<Receipt className="text-blue-600" />} 
+            data={stats?.devis?.liste_en_attente}
+            bgColor="bg-blue-50/30"
+            isDevis
+          />
         )}
 
-        {/* 3. NOTES DE FRAIS EN ATTENTE */}
         {hasAccess('note_frais') && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="p-5 border-b border-gray-50 flex items-center justify-between bg-red-50/30">
-              <h3 className="font-bold text-gray-900 flex items-center gap-2 uppercase tracking-tighter text-sm">
-                <Banknote className="text-red-600 w-5 h-5" />
-                {t("Frais en attente")} ({stats?.notes_frais?.en_attente})
-              </h3>
-            </div>
-            <div className="max-h-[350px] overflow-y-auto">
-              {stats?.notes_frais?.liste_en_attente?.length > 0 ? (
-                stats.notes_frais.liste_en_attente.map((frais) => (
-                  <div key={frais.id} className="p-4 border-b border-gray-50 hover:bg-gray-50 transition-all flex justify-between items-center">
-                    <div>
-                      <p className="font-bold text-gray-900 text-sm">{frais.demandeur_nom || "Collaborateur"}</p>
-                      <p className="text-[11px] text-gray-500">{new Date(frais.date_creation).toLocaleDateString()}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-black text-red-600">{Number(frais.montant_total || 0).toLocaleString()} MRU</p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="p-8 text-center text-gray-400 text-sm font-medium">{t("Aucun frais en attente")}</div>
-              )}
-            </div>
-          </div>
+          <ListCard 
+            title={t("Frais en attente")} 
+            count={stats?.notes_frais?.en_attente} 
+            icon={<Banknote className="text-red-600" />} 
+            data={stats?.notes_frais?.liste_en_attente}
+            bgColor="bg-red-50/30"
+            isFrais
+          />
         )}
+      </div>
+    </div>
+  );
+}
+
+// Composants internes pour la lisibilité
+function ListCard({ title, count, icon, data, bgColor, isDevis, isFrais }) {
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className={`p-5 border-b border-gray-50 flex items-center justify-between ${bgColor}`}>
+        <h3 className="font-bold text-gray-900 flex items-center gap-2 uppercase tracking-tighter text-sm">
+          {cloneElement(icon, { size: 20 })} {title} ({count})
+        </h3>
+      </div>
+      <div className="max-h-[350px] overflow-y-auto">
+        {data?.length > 0 ? data.map((item) => (
+          <div key={item.id} className="p-4 border-b border-gray-50 hover:bg-gray-50 transition-all flex justify-between items-center">
+            <div>
+              <p className="font-bold text-gray-900 text-sm truncate max-w-[180px]">
+                {isDevis ? item.client_nom : (item.demandeur_nom || "Agent")}
+              </p>
+              <p className="text-[11px] text-gray-500 font-medium">
+                {isDevis ? item.numero_devis : new Date(item.date_demande || item.date_creation).toLocaleDateString()}
+              </p>
+            </div>
+            {(isDevis || isFrais) && (
+              <div className="text-right">
+                <p className={`text-sm font-black ${isFrais ? 'text-red-600' : 'text-emerald-600'}`}>
+                  {Number(item.montant_total || 0).toLocaleString()} {item.devise || 'MRU'}
+                </p>
+              </div>
+            )}
+          </div>
+        )) : <div className="p-8 text-center text-gray-400 text-sm font-medium">Aucun élément</div>}
       </div>
     </div>
   );

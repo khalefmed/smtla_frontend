@@ -9,7 +9,6 @@ export const generateFDAPDF = async (fda) => {
   let yPos = 20;
   const lightGray = [240, 240, 240]; 
   const currency = fda.currency || 'EUR';
-  // const days = Number(fda.number_of_days || 1);
 
   // ============== EN-TÊTE ==============
   doc.addImage(logo, 'PNG', 14, 10, 35, 18); 
@@ -27,20 +26,17 @@ export const generateFDAPDF = async (fda) => {
   doc.setLineWidth(0.5);
   doc.rect(70, yPos, 70, 8);
   doc.setFont('helvetica', 'bold');
-  doc.text(`FDA N°: ${fda.fda_number || '---'} - TBN`, 105, yPos + 6, { align: 'center' });
+  doc.text(`FDA N°: ${fda.fda_number || '---'} - ${fda.vessel_name}`, 105, yPos + 6, { align: 'center' });
 
   yPos += 15;
 
   // ============== INFOS CLIENT & NAVIRE ==============
   const infoData = [
     ['Customer:', fda.client?.nom || fda.client_nom || '---'],
-    ['Phone:', fda.client?.telephone || '---'],
-    ['Email:', fda.client?.email || fda.client_email || '---'],
     ['Port d\'arrivée:', fda.port_of_arrival || 'NOUAKCHOTT'],
-    ['Vessel:', fda.vessel_name || '---'],
-    // ['Stay Duration:', `${days} Days`],
+    // ['Vessel:', fda.vessel_name || '---'],
     ['Cargo:', fda.cargo_description || 'AS PER CARGO LIST ATTACHED'],
-    ['Weight:', fda.weight || '----'],
+    ['Weight (GRT):', fda.weight || '----'],
     ['Trip Number:', fda.voyage || '----']
   ]; 
 
@@ -72,30 +68,36 @@ export const generateFDAPDF = async (fda) => {
     let colStyles = {};
 
     if (cat.id === 'PORT_DUES') {
-      // Configuration 4 colonnes spécifique
-      headers = [[ cat.label, 'GRT/QTY', `${currency}/GRT`, 'GRT/DAY', `RATE (${currency})` ]];
+      // Configuration adaptée à l'image précédente
+      headers = [[ 
+        cat.label, 
+        'PORT INV', 
+        'GRT', 
+        'RATE', 
+        'PRICE MRU', 
+        `PRICE ${currency}` 
+      ]];
       
-      tableData = items.map(item => {
-        const grtQty = Number(item.grt_value || 0);
-        const deviseGrt = Number(item.rate || 0);
-        const grtDay = grtQty * deviseGrt;
-        
-        // Calcul du RATE final : Uniquement (GRT/DAY * Jours) si c'est BERTH DUES
-        const isBerthDues = item.label.toUpperCase().includes('BERTH DUES');
-        const finalRate = grtDay;
+      tableData = items.map(item => [
+        item.label,
+        item.port_inv || '---',
+        Number(item.grt_value || 0).toLocaleString('en-US'),
+        Number(item.rate || 0).toFixed(3),
+        Number(item.price_mru || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }),
+        Number(item.price_devise || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })
+      ]);
 
-        return [
-          item.label,
-          grtQty.toLocaleString('en-US'),
-          deviseGrt.toFixed(3),
-          grtDay.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-          finalRate.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-        ];
-      });
-      colStyles = { 0: { cellWidth: 70 }, 1: { halign: 'center' }, 2: { halign: 'center' }, 3: { halign: 'right' }, 4: { halign: 'right' } };
+      colStyles = { 
+        0: { cellWidth: 50 }, // Désignation
+        1: { halign: 'center' }, // Port Inv
+        2: { halign: 'center' }, // GRT
+        3: { halign: 'center' }, // Rate
+        4: { halign: 'right' },  // Price MRU
+        5: { halign: 'right' }   // Price Devise
+      };
     } else {
       // Configuration standard pour les autres catégories
-      headers = [[ cat.label, cat.id == "STEVEDORING" ? 'UNIT (TON)' : 'UNIT', `RATE (${currency})`, `TOTAL (${currency})` ]];
+      headers = [[ cat.label, 'UNIT', `RATE (${currency})`, `TOTAL (${currency})` ]];
       tableData = items.map(item => [
         item.label,
         cat.id === 'STEVEDORING' ? (item.grt_value || '1') : '1',
@@ -105,11 +107,10 @@ export const generateFDAPDF = async (fda) => {
       colStyles = { 0: { cellWidth: 90 }, 1: { halign: 'center' }, 2: { halign: 'right' }, 3: { halign: 'right' } };
     }
 
-    // Calcul du sous-total de la catégorie (en respectant la règle des jours pour Berth Dues)
+    // Calcul du sous-total basé sur price_devise pour PORT_DUES, sinon calcul classique
     const subTotalCat = items.reduce((sum, i) => {
-        const base = Number(i.grt_value || 0) * Number(i.rate || 0);
-        const isBerthDues = i.label.toUpperCase().includes('BERTH DUES');
-        return sum + base;
+        if (cat.id === 'PORT_DUES') return sum + Number(i.price_devise || 0);
+        return sum + (Number(i.grt_value || 1) * Number(i.rate || 0));
     }, 0);
     
     const vatCat = fda.apply_vat ? subTotalCat * 0.16 : 0;
@@ -123,7 +124,7 @@ export const generateFDAPDF = async (fda) => {
       head: headers,
       body: tableData,
       theme: 'plain', 
-      styles: { fontSize: 7.5, cellPadding: 2, lineColor: [200, 200, 200], lineWidth: 0.1 },
+      styles: { fontSize: 7, cellPadding: 2, lineColor: [200, 200, 200], lineWidth: 0.1 },
       headStyles: { fillColor: lightGray, fontStyle: 'bold', textColor: [0, 0, 0] },
       columnStyles: colStyles,
       foot: [
@@ -149,21 +150,10 @@ export const generateFDAPDF = async (fda) => {
 
   yPos += 15;
 
-  // // ============== REMARQUES ==============
-  // if (yPos > 220) { doc.addPage(); yPos = 20; }
-  // doc.setFontSize(9);
-  // doc.text('REMARKS:', 14, yPos);
-  // doc.setFont('helvetica', 'normal');
-  // doc.setFontSize(8);
-  // const splitRemarks = doc.splitTextToSize(fda.remarks || 'N/A', 182);
-  // doc.text(splitRemarks, 14, yPos + 5);
-
   // ============== SIGNATURES ==============
-  console.log("FDA Creator Type:", fda.createur?.type);
   const sigImage = fda.createur?.type === 'directeur_general' ? sigDG : sigDO;
   if (sigImage) {
-    // Ajustement de la position pour ne pas chevaucher le texte
-    const sigY = Math.min(yPos + 20, 230);
+    const sigY = Math.min(yPos + 5, 230);
     doc.addImage(sigImage, 'PNG', 135, sigY, 50, 50);
   }
 
@@ -174,5 +164,5 @@ export const generateFDAPDF = async (fda) => {
   doc.text('Siège social : SOCO BMCI N°0190 Moughata de Tevragh Zeina - Nouakchott - Mauritanie', 105, pageHeight - 10, { align: 'center' });
   doc.text('Tél : 24 34 40 01 / 24 34 40 00 | NIF : 01328566', 105, pageHeight - 6, { align: 'center' });
 
-  doc.save(`${fda.fda_number}.pdf`);
+  doc.save(`${fda.fda_number || 'FDA'}.pdf`);
 };

@@ -8,7 +8,7 @@ function ArchiveModal({ onClose, onSave }) {
   const [formData, setFormData] = useState({
     titre: '',
     description: '',
-    type_doc: 'PDF',
+    type_doc: 'IMAGE',
     fichier: null
   });
 
@@ -38,6 +38,7 @@ const handleSubmit = async (e) => {
     toast.success("Document stocké avec succès");
     onSave();
   } catch (error) {
+    console.error("Erreur lors de l'archivage :", error);
     toast.error("Erreur lors du transfert");
   } finally {
     setLoading(false);

@@ -46,10 +46,12 @@ export function generateDailyReportPdf(reportData) {
   doc.setFont('helvetica', 'bold');
   const mainTitle = isSortie ? 'Daily Report - Out of Stock' : 'Daily Report - Inbound';
   doc.text(mainTitle, pageWidth / 2, 45, { align: 'center' });
+    doc.setFontSize(12);
+  doc.text((reportData.navire || ''), pageWidth / 2, 53, { align: 'center' });
 
-  doc.setFontSize(12);
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text(reportData.date || '', pageWidth / 2, 55, { align: 'center' });
+  doc.text(reportData.date || '', pageWidth / 2, 60, { align: 'center' });
 
   // --- 3. DÉTAILS DES MOUVEMENTS (TABLEAU) ---
   const clients = reportData.colonnes || [];

@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import FDAModal from '@/components/ui/shared/FDAModal';
 import { getRole } from '@/lib/utils';
-// import { generateFDAPDF } from '@/lib/generatePdaPdf';
+import { generateFDAPDF } from '@/lib/generateFdaPdf';
 
 function FDA() {
   const { t } = useTranslation();

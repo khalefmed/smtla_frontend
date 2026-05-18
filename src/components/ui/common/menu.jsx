@@ -78,7 +78,7 @@ function SideBar({changeVisibility}) {
               {!hasPermission("bon_commande") ?  <></> : <MyNavLink route="bon_de_commande" label={t("Bon de Commande")} icon={HiNewspaper}/>} 
               {!hasPermission("bad") ?  <></> : <MyNavLink route="bad" label={t("BAD")} icon={HiNewspaper}/>} 
               {!hasPermission("pda") ?  <></> : <MyNavLink route="pda" label={t("PDA")} icon={HiNewspaper}/>} 
-              {/* {!hasPermission("fda") ?  <></> : <MyNavLink route="fda" label={t("FDA")} icon={HiNewspaper}/>}  */}
+              {!hasPermission("fda") ?  <></> : <MyNavLink route="fda" label={t("FDA")} icon={HiNewspaper}/>} 
               {(hasPermission("archives")) && <MyNavLink route="archives" label={t("Archives")} icon={FaArchive}/>}
               {hasPermission("clients") && <MyNavLink route="clients" label={t("Clients")} icon={FaUsers}/>} 
               {hasPermission("fournisseurs") && <MyNavLink route="fournisseurs" label={t("Fournisseurs")} icon={FaUsers}/>} 
