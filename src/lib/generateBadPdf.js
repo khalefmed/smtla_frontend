@@ -109,6 +109,12 @@ export const generateBadPDF = async (bad, client) => {
   doc.text('PAYMENT FACTURE', xFacture, yFacture);
   doc.text(bad.facture_ref ? 'YES' : 'NO', 175, yFacture);
 
+  yFacture += 10;
+  doc.setFont('helvetica', 'bold');
+  doc.text('Expiry Date', xFacture, yFacture);
+  const expiry = bad.date_expiration ? new Date(bad.date_expiration).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+  doc.text(expiry, 175, yFacture);
+
   yPos += 20;
 
   // ============== TABLEAU DES ITEMS ==============
