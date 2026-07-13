@@ -21,7 +21,7 @@ function Dashboard() {
     'Agent Port' : ['rotations', 'clients', 'types de materiel', 'expression_besoin'],
     'Comptable' : ['factures', 'note_frais', 'devis', 'clients', 'expression_besoin', 'fournisseurs', 'bon_commande'],
     'Directeur des Opérations' : ['factures', 'note_frais', 'devis', 'clients', 'rotations', 'expression_besoin', 'fournisseurs', 'types de materiel', 'bon_commande', 'bad', 'archives', 'Rapports'],
-    'Directeur Général' : ['factures', 'note_frais', 'expression_besoin', 'devis', 'clients', 'rotations', 'fournisseurs', 'types de materiel', 'bon_commande', 'archives'],
+    'Directeur Général' : ['factures', 'note_frais', 'expression_besoin', 'devis', 'clients', 'fournisseurs', 'types de materiel', 'bon_commande', 'archives'],
   };
 
   const hasAccess = (feature) => users_permissions[role]?.includes(feature);
@@ -107,6 +107,16 @@ function Dashboard() {
           <>
             <StatCard title={t("Rotations Entrantes")} value={stats?.rotations?.total_entrantes ?? 0} icon={<ArrowDownCircle />} color="bg-green-500" />
             <StatCard title={t("Rotations Sortantes")} value={stats?.rotations?.total_sortantes ?? 0} icon={<ArrowUpCircle />} color="bg-orange-500" />
+            
+            {/* CARTE CONDITIONNELLE : UNIQUE POUR AGENT PORT ET DIRECTEUR DES OPERATIONS */}
+            {['Agent Port', 'Directeur des Opérations'].includes(role) && (
+              <StatCard 
+                title={t("Matériels en Stock Global")} 
+                value={stats?.rotations?.quantite_en_stock_global ?? 0} 
+                icon={<Package />} 
+                color="bg-amber-500" 
+              />
+            )}
           </>
         )}
         {hasAccess('clients') && (

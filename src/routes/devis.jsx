@@ -4,11 +4,58 @@ import toast from 'react-hot-toast';
 import { useTranslation } from "react-i18next";
 import { 
   Search, Plus, FileText, Trash2, Edit3, 
-  ArrowRightLeft, Anchor, User, FileCheck, XCircle, Eye, Ship, Calendar, Box, Weight, Info
+  ArrowRightLeft, Anchor, User, FileCheck, XCircle, Eye, Ship, Calendar, Box, Weight, Info,
+  Copy // Ajout de l'icône Copy
 } from 'lucide-react';
 import DevisModal from '@/components/ui/shared/devisModal';
 import { generateDevisPDF } from '@/lib/generateDevisPdf';
 import { getRole } from '@/lib/utils';
+
+// --- NOUVEAU MODAL DE CONFIRMATION DE DUPLICATION DE DEVIS ---
+function DuplicateDevisModal({ devis, onClose, onConfirm }) {
+  const [loading, setLoading] = useState(false);
+
+  const handleConfirm = async () => {
+    setLoading(true);
+    await onConfirm(devis.id);
+    setLoading(false);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95">
+        <div className="p-6 border-b flex justify-between items-center bg-amber-500 text-white">
+          <h3 className="font-bold text-lg flex items-center gap-2">
+            <Copy className="w-5 h-5" /> Dupliquer le devis
+          </h3>
+          <button onClick={onClose} className="hover:bg-white/20 rounded-full p-1 transition-colors">
+            <XCircle className="w-6 h-6" />
+          </button>
+        </div>
+        
+        <div className="p-6 space-y-4">
+          <p className="text-gray-600 text-sm font-medium">
+            Voulez-vous vraiment dupliquer le devis <span className="font-bold text-gray-900">{devis?.reference}</span> ainsi que tous ses éléments liés ?
+          </p>
+          <p className="text-xs text-amber-600 bg-amber-5/50 p-3 rounded-xl border border-amber-100 font-semibold">
+            Note : Le nouveau devis sera créé avec le statut "En attente" et vous en serez désigné comme le créateur.
+          </p>
+
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose} className="flex-1 py-3 font-bold text-gray-500 hover:bg-gray-50 rounded-xl transition-colors">Annuler</button>
+            <button 
+              disabled={loading}
+              onClick={handleConfirm}
+              className="flex-1 py-3 bg-amber-500 text-white rounded-xl font-bold shadow-lg hover:bg-amber-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {loading ? "Duplication..." : "Confirmer"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // --- COMPOSANT DE VUE DÉTAILLÉE ---
 function DevisPreviewModal({ devis, onClose }) {
@@ -126,6 +173,7 @@ function Devis() {
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false); // NOUVEAU
   const [selectedDevis, setSelectedDevis] = useState(null);
 
   const currentRole = getRole();
@@ -163,6 +211,18 @@ function Devis() {
       fetchData();
     } catch (error) { 
       toast.error(t("Erreur lors de l'enregistrement")); 
+    }
+  };
+
+  // NOUVELLE LOGIQUE DE DUPLICATION VIA LE MODAL MODERNE
+  const handleDuplicate = async (id) => {
+    try {
+      await api.post(`devis/${id}/dupliquer/`);
+      toast.success(t("Devis dupliqué avec succès (Statut: En attente)"));
+      setShowDuplicateModal(false);
+      fetchData();
+    } catch (error) {
+      toast.error(t("erreur de duplication")); // Message d'erreur épuré
     }
   };
 
@@ -303,6 +363,15 @@ function Devis() {
                       <FileText className="w-5 h-5" />
                     </button>
 
+                    {/* BOUTON DECLENCHEUR DU MODAL DE DUPLICATION */}
+                    <button 
+                      onClick={() => { setSelectedDevis(devis); setShowDuplicateModal(true); }} 
+                      className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                      title={t("Dupliquer ce devis")}
+                    >
+                      <Copy className="w-5 h-5" />
+                    </button>
+
                     {peutModifier(devis) && (
                       <button onClick={() => { setSelectedDevis(devis); setShowModal(true); }} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg">
                         <Edit3 className="w-5 h-5" />
@@ -324,6 +393,9 @@ function Devis() {
 
       {showModal && <DevisModal devis={selectedDevis} clients={clients} onClose={() => setShowModal(false)} onSave={handleSave} />}
       {showPreview && <DevisPreviewModal devis={selectedDevis} onClose={() => setShowPreview(false)} />}
+      
+      {/* AFFICHAGE DU COMPOSANT DUPLICATE MODAL */}
+      {showDuplicateModal && <DuplicateDevisModal devis={selectedDevis} onClose={() => setShowDuplicateModal(false)} onConfirm={handleDuplicate} />}
     </div>
   );
 }

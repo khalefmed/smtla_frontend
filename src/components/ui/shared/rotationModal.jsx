@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { api } from "@/lib/api";
 import { 
   X, Calendar, Package, Truck, Save, Hash, 
-  User, Info, Ship // Ajout de l'icône Ship
+  User, Info, Ship 
 } from 'lucide-react';
 
 function RotationModal({ rotation, type, onClose, onSave }) {
@@ -16,7 +16,7 @@ function RotationModal({ rotation, type, onClose, onSave }) {
     observation: '',
     camion: '',
     quantite: 1,
-    navire: '', // Valeur par défaut identique au modèle Django
+    navire: '', // Initialisé vide par défaut
     [type === 'entrantes' ? 'date_arrivee' : 'date_sortie']: new Date().toISOString().slice(0, 16)
   });
 
@@ -31,6 +31,7 @@ function RotationModal({ rotation, type, onClose, onSave }) {
     });
 
     if (rotation) {
+      // Mode Édition : on prend la valeur de la rotation existante
       setFormData({
         client_id: rotation.client,
         type_materiel_id: rotation.type_materiel,
@@ -38,15 +39,30 @@ function RotationModal({ rotation, type, onClose, onSave }) {
         observation: rotation.observation || '',
         camion: rotation.camion,
         quantite: rotation.quantite,
-        navire: rotation.navire || 'MV-BRIALLANCE', // Récupération du navire existant
+        navire: rotation.navire || '', 
         [type === 'entrantes' ? 'date_arrivee' : 'date_sortie']: 
           (type === 'entrantes' ? rotation.date_arrivee : rotation.date_sortie).slice(0, 16)
       });
+    } else {
+      // Mode Création : on récupère le dernier navire enregistré dans le localStorage
+      const lastSavedVessel = localStorage.getItem('last_navire');
+      if (lastSavedVessel) {
+        setFormData(prev => ({
+          ...prev,
+          navire: lastSavedVessel
+        }));
+      }
     }
   }, [rotation, type]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Sauvegarde du nom du navire dans le localStorage s'il est renseigné
+    if (formData.navire && formData.navire.trim() !== '') {
+      localStorage.setItem('last_navire', formData.navire.trim());
+    }
+
     onSave(formData);
   };
 

@@ -98,9 +98,6 @@ function Rotations() {
     const q = search.toLowerCase();
     
     if (activeTab === 'stock') {
-      // 1. On filtre les clients par recherche
-      // 2. Pour chaque client, on ne garde que les types dont la quantité > 0
-      // 3. On ne garde le client que s'il lui reste au moins un type de matériel avec du stock
       return stocks
         .map(s => ({
           ...s,
@@ -130,7 +127,6 @@ function Rotations() {
         
         {activeTab !== 'stock' && (
           <div className="flex gap-3">
-            {/* BOUTON CLÔTURER TOUT : Affiché seulement pour DG et DO */}
             {(role === 'Directeur Général' || role === 'Directeur des Opérations') && (
               <button
                 onClick={handleCloturerTout}
@@ -166,16 +162,34 @@ function Rotations() {
         </button>
       </div>
 
-      {/* SEARCH BAR */}
-      <div className="bg-white rounded-2xl shadow-sm p-4 relative border border-gray-100">
-        <Search className="absolute left-7 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-        <input
-          type="text"
-          placeholder={activeTab === 'stock' ? t("Rechercher un client...") : t("Rechercher par client, bordereau, matériel ou navire...")}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-12 pr-4 py-3 bg-gray-50 rounded-xl outline-none border border-transparent focus:border-buttonGradientPrimary font-medium transition-all"
-        />
+      {/* SEARCH BAR & COUNTER */}
+      <div className="space-y-3">
+        <div className="bg-white rounded-2xl shadow-sm p-4 relative border border-gray-100">
+          <Search className="absolute left-7 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <input
+            type="text"
+            placeholder={activeTab === 'stock' ? t("Rechercher un client...") : t("Rechercher par client, bordereau, matériel ou navire...")}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-12 pr-4 py-3 bg-gray-50 rounded-xl outline-none border border-transparent focus:border-buttonGradientPrimary font-medium transition-all"
+          />
+        </div>
+
+        {/* Dynamic Counter */}
+        {!loading && (
+          <div className="px-2 text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5 animate-in fade-in duration-200">
+            <span className="w-2 h-2 rounded-full bg-buttonGradientSecondary" />
+            {activeTab === 'stock' ? (
+              <>
+                {filteredData.length} {filteredData.length > 1 ? t("clients trouvés avec du stock") : t("client trouvé avec du stock")}
+              </>
+            ) : (
+              <>
+                {filteredData.length} {filteredData.length > 1 ? t("rotations trouvées") : t("rotation trouvée")}
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* CONTENT */}
@@ -231,7 +245,7 @@ function Rotations() {
           </div>
         </div>
       ) : (
-        /* VUE LISTE (Même logique que précédemment) */
+        /* VUE LISTE */
         <div className="grid grid-cols-1 gap-4">
           {filteredData.length > 0 ? (
             filteredData.map((r) => (

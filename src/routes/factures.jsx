@@ -6,7 +6,7 @@ import {
   Search, Plus, FileCheck, Trash2, Edit3,
   Anchor, User, FileStack, FileText, EyeOff, XCircle, Eye, Ship, 
   Calendar, Box, Weight, Info, CreditCard, CheckCircle2,
-  FileDown
+  FileDown, Copy
 } from 'lucide-react';
 import FactureModal from '@/components/ui/shared/factureModal';
 import ImportDevisModal from '@/components/ui/shared/importDevisModal';
@@ -14,10 +14,56 @@ import { generateFacturePDF } from '@/lib/generateFacturePdf';
 import { generateRecuPDF } from '@/lib/generateRecuPdf';
 import { getRole } from '@/lib/utils';
 
-// --- NOUVEAU MODAL DE PAIEMENT ---
+// --- NOUVEAU MODAL DE CONFIRMATION DE DUPLICATION ---
+function DuplicateConfirmationModal({ facture, onClose, onConfirm }) {
+  const [loading, setLoading] = useState(false);
+
+  const handleConfirm = async () => {
+    setLoading(true);
+    await onConfirm(facture.id);
+    setLoading(false);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95">
+        <div className="p-6 border-b flex justify-between items-center bg-amber-500 text-white">
+          <h3 className="font-bold text-lg flex items-center gap-2">
+            <Copy className="w-5 h-5" /> Dupliquer la facture
+          </h3>
+          <button onClick={onClose} className="hover:bg-white/20 rounded-full p-1 transition-colors">
+            <XCircle className="w-6 h-6" />
+          </button>
+        </div>
+        
+        <div className="p-6 space-y-4">
+          <p className="text-gray-600 text-sm font-medium">
+            Voulez-vous vraiment dupliquer la facture <span className="font-bold text-gray-900">{facture?.reference}</span> ainsi que tous ses éléments liés ?
+          </p>
+          <p className="text-xs text-amber-600 bg-amber-5/50 p-3 rounded-xl border border-amber-100 font-semibold">
+            Note : La nouvelle facture sera réinitialisée avec le statut "En attente" et vous en serez désigné comme le créateur.
+          </p>
+
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose} className="flex-1 py-3 font-bold text-gray-500 hover:bg-gray-50 rounded-xl transition-colors">Annuler</button>
+            <button 
+              disabled={loading}
+              onClick={handleConfirm}
+              className="flex-1 py-3 bg-amber-500 text-white rounded-xl font-bold shadow-lg hover:bg-amber-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {loading ? "Duplication..." : "Confirmer"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- MODAL DE PAIEMENT ---
 function PaymentModal({ facture, onClose, onConfirm }) {
   const [moyen, setMoyen] = useState('espece');
-  const [refRecu, setRefRecu] = useState(''); // Nouveau champ
+  const [refRecu, setRefRecu] = useState(''); 
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -27,7 +73,6 @@ function PaymentModal({ facture, onClose, onConfirm }) {
       return;
     }
     setLoading(true);
-    // On envoie les deux informations au parent
     await onConfirm(facture.id, { moyen, reference_recu: refRecu });
     setLoading(false);
   };
@@ -50,7 +95,6 @@ function PaymentModal({ facture, onClose, onConfirm }) {
             <p className="font-bold text-gray-900">{facture.reference} — {Number(facture.montant_total).toLocaleString()} {facture.devise_display}</p>
           </div>
 
-          {/* CHAMP RÉFÉRENCE REÇU (Saisie manuelle) */}
           <div>
             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Référence du Reçu</label>
             <input 
@@ -63,7 +107,6 @@ function PaymentModal({ facture, onClose, onConfirm }) {
             />
           </div>
 
-          {/* MOYEN DE PAIEMENT */}
           <div>
             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Moyen de Paiement</label>
             <select 
@@ -94,7 +137,7 @@ function PaymentModal({ facture, onClose, onConfirm }) {
   );
 }
 
-// --- PREVIEW MODAL (Inchangé mais on pourrait ajouter les infos de paiement ici) ---
+// --- PREVIEW MODAL ---
 function FacturePreviewModal({ facture, onClose }) {
   if (!facture) return null;
   const nomClient = facture.client?.nom || facture.client_nom || "Client inconnu";
@@ -115,7 +158,6 @@ function FacturePreviewModal({ facture, onClose }) {
         </div>
         
         <div className="p-8 space-y-6 overflow-y-auto max-h-[75vh]">
-            {/* Infos de paiement si payée */}
             {facture.status === 'paye' && (
                 <div className="p-4 bg-green-50 border border-green-100 rounded-2xl flex justify-between items-center">
                     <div>
@@ -129,19 +171,17 @@ function FacturePreviewModal({ facture, onClose }) {
                 </div>
             )}
 
-          {/* ... reste de la preview identique à votre code ... */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-5 bg-gray-50 rounded-2xl border border-gray-100">
             <div>
               <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Navire / Type</p>
               <p className="font-bold text-sm flex items-center gap-1">
-                <Ship className="w-3 h-3 text-amber-600"/> {facture.vessel || '---'}
+                <Ship className="w-3 h-3 text-amber-600"/> {f || '---'}
               </p>
             </div>
             <div>
               <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Port</p>
               <p className="font-bold text-sm text-gray-700">{facture.port_arrive || '---'}</p>
             </div>
-            {/* Ajoutez les autres colonnes ici comme dans votre code original */}
           </div>
 
           <table className="w-full text-sm">
@@ -189,7 +229,8 @@ function Factures() {
   const [showFactureModal, setShowFactureModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
-  const [showPaymentModal, setShowPaymentModal] = useState(false); // NOUVEAU
+  const [showPaymentModal, setShowPaymentModal] = useState(false); 
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false); // NOUVEAU
   const [selectedFacture, setSelectedFacture] = useState(null);
 
   const currentRole = getRole();
@@ -210,27 +251,37 @@ function Factures() {
     finally { setLoading(false); }
   };
 
-  // NOUVELLE FONCTION POUR LE PAIEMENT
-const handlePay = async (id, data) => {
-  try {
-    // data contient { moyen, reference_recu }
-    const res = await api.patch(`factures/${id}/payer/`, data);
-    
-    toast.success(
-      <div>
-        <p className="font-bold">Facture payée avec succès !</p>
-        <p className="text-xs">Numéro de système : {res.data.numero_recu}</p>
-      </div>, 
-      { duration: 5000 }
-    );
-    
-    setShowPaymentModal(false);
-    fetchData(); // Rafraîchir la liste pour voir le statut "payé"
-  } catch (error) {
-    const errorMsg = error.response?.data?.error || "Erreur lors de l'enregistrement du paiement";
-    toast.error(errorMsg);
-  }
-};
+  const handlePay = async (id, data) => {
+    try {
+      const res = await api.patch(`factures/${id}/payer/`, data);
+      
+      toast.success(
+        <div>
+          <p className="font-bold">Facture payée avec succès !</p>
+          <p className="text-xs">Numéro de système : {res.data.numero_recu}</p>
+        </div>, 
+        { duration: 5000 }
+      );
+      
+      setShowPaymentModal(false);
+      fetchData(); 
+    } catch (error) {
+      const errorMsg = error.response?.data?.error || "Erreur lors de l'enregistrement du paiement";
+      toast.error(errorMsg);
+    }
+  };
+
+  // EXECUTION DE LA DUPLICATION APRÈS MODAL DE CONFIRMATION
+  const handleDuplicate = async (id) => {
+    try {
+      await api.post(`factures/${id}/dupliquer/`);
+      toast.success(t("Facture dupliquée avec succès (Statut: En attente)"));
+      setShowDuplicateModal(false);
+      fetchData(); 
+    } catch (error) {
+      toast.error(t("erreur de duplication")); // Message d'erreur strict
+    }
+  };
 
   const handleSave = async (formData) => {
     try {
@@ -271,7 +322,6 @@ const handlePay = async (id, data) => {
     generateFacturePDF(facture);
   };
 
-
   const handleDownloadRecu = (facture) => {
     if (facture.status !== 'paye') {
       toast.error(t("Le PDF n'est disponible que pour les factures validées ou payées"));
@@ -301,11 +351,6 @@ const handlePay = async (id, data) => {
         <span className={`px-2 py-0.5 rounded-full text-[9px] font-black border uppercase ${config[status] || config.attente}`}>
           {status}
         </span>
-        {/* {status === 'paye' && recu && (
-          <span className="text-[9px] font-bold text-green-600 bg-white px-1 border border-green-100 rounded">
-            REC: {recu}
-          </span>
-        )} */}
       </div>
     );
   };
@@ -375,7 +420,6 @@ const handlePay = async (id, data) => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex justify-center gap-1">
-                      {/* BOUTON PAIEMENT SI VALIDE */}
                       {peutValider && f.status === 'valide' && (
                         <button 
                           onClick={() => { setSelectedFacture(f); setShowPaymentModal(true); }} 
@@ -386,10 +430,18 @@ const handlePay = async (id, data) => {
                         </button>
                       )}
 
-                      <button onClick={() => { setSelectedFacture(f); setShowPreview(true); }} className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
+                      <button onClick={() => { setSelectedFacture(f); setShowPreview(true); }} className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Aperçu">
                         <Eye className="w-5 h-5" />
                       </button>
 
+                      {/* OUVERTURE DU MODAL DE CONFIRMATION */}
+                      <button 
+                        onClick={() => { setSelectedFacture(f); setShowDuplicateModal(true); }} 
+                        className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                        title={t("Dupliquer cette facture")}
+                      >
+                        <Copy className="w-5 h-5" />
+                      </button>
 
                       {peutValider && f.status === 'attente' && (
                         <>
@@ -414,18 +466,18 @@ const handlePay = async (id, data) => {
                         </>
                       )}
                       
-                      <button onClick={() => handleDownloadPDF(f)} className={`p-2 rounded-lg transition-colors ${(f.status === 'valide' || f.status === 'paye') ? 'text-gray-600 hover:text-buttonGradientSecondary hover:bg-indigo-50' : 'text-gray-200 cursor-not-allowed'}`}>
+                      <button onClick={() => handleDownloadPDF(f)} className={`p-2 rounded-lg transition-colors ${(f.status === 'valide' || f.status === 'paye') ? 'text-gray-600 hover:text-buttonGradientSecondary hover:bg-indigo-50' : 'text-gray-200 cursor-not-allowed'}`} title="Télécharger Facture">
                         <FileText className="w-5 h-5" />
                       </button>
 
                       {peutModifier && (
-                        <button onClick={() => { setSelectedFacture(f); setShowFactureModal(true); console.log("clicked") }} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg">
+                        <button onClick={() => { setSelectedFacture(f); setShowFactureModal(true); }} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg" title="Modifier">
                           <Edit3 className="w-5 h-5" />
                         </button>
                       )}
 
                       {f.status !== 'paye' && (
-                        <button onClick={() => handleDelete(f.id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg">
+                        <button onClick={() => handleDelete(f.id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg" title="Supprimer">
                           <Trash2 className="w-5 h-5" />
                         </button>
                       )}
@@ -441,8 +493,10 @@ const handlePay = async (id, data) => {
       {showFactureModal && <FactureModal facture={selectedFacture} onClose={() => setShowFactureModal(false)} onSave={handleSave} clients={clients} />}
       {showImportModal && <ImportDevisModal onClose={() => setShowImportModal(false)} onSuccess={() => { setShowImportModal(false); fetchData(); }} />}
       {showPreview && <FacturePreviewModal facture={selectedFacture} onClose={() => setShowPreview(false)} />}
-      {/* AFFICHAGE DU MODAL DE PAIEMENT */}
       {showPaymentModal && <PaymentModal facture={selectedFacture} onClose={() => setShowPaymentModal(false)} onConfirm={handlePay} />}
+      
+      {/* AFFICHAGE DU MODAL DE DUPLICATION SÉCURISÉ */}
+      {showDuplicateModal && <DuplicateConfirmationModal facture={selectedFacture} onClose={() => setShowDuplicateModal(false)} onConfirm={handleDuplicate} />}
     </div>
   );
 }

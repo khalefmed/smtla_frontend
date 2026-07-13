@@ -89,13 +89,10 @@ function ExpressionsBesoin() {
     }
   };
 
-const handleExportPdf = (eb) => {
+  const handleExportPdf = (eb) => {
     try {
       toast.loading(t("Génération du PDF..."), { id: 'pdf-gen' });
-      
-      // Appel de votre fonction importée
       generateEbPdf(eb);
-      
       toast.success(t("PDF généré avec succès"), { id: 'pdf-gen' });
     } catch (error) {
       console.error(error);
@@ -205,20 +202,16 @@ const handleExportPdf = (eb) => {
 
               <div className="space-y-3 mb-6 text-sm font-bold">
                 <div className="flex items-center gap-2 text-gray-700"><UserCheck className="w-4 h-4 text-buttonGradientPrimary" /> {eb.nom_demandeur}</div>
-                {/* <div className="flex items-center gap-2 text-gray-500 font-medium"><User className="w-4 h-4" /> {eb.client_beneficiaire_nom}</div> */}
                 <div className="flex items-center gap-2 text-gray-500 font-medium"><Ship className="w-4 h-4" /> {eb.navire}</div>
               </div>
 
-              <div className="flex items-center gap-2 mb-4">{getStatusBadge(eb.status)}</div>
+              <div className="flex items-center gap-2 mb-2">{getStatusBadge(eb.status)}</div>
             </div>
-
-            <div className="flex justify-between items-end border-t border-gray-50 pt-4 mt-4">
-              <div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase">{t("Total")}</p>
-                <p className="text-xl font-bold">{Number(eb.montant_total).toLocaleString()} {eb.devise_display}</p>
-              </div>
-              {eb.tva && <span className="bg-indigo-50 text-buttonGradientSecondary text-[10px] font-bold px-2 py-1 rounded">TVA 16%</span>}
-            </div>
+            
+            {/* Pied de carte épuré sans montants ni TVA */}
+            {/* <div className="border-t border-gray-50 pt-2 mt-2 flex justify-between items-center">
+              <span className="text-[10px] font-bold text-gray-400 uppercase">{t("Suivi logistique")}</span>
+            </div> */}
           </div>
         ))}
       </div>
@@ -231,6 +224,7 @@ const handleExportPdf = (eb) => {
 }
 
 function PreviewModal({ expression, onClose }) {
+  const { t } = useTranslation();
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-200">
@@ -245,23 +239,28 @@ function PreviewModal({ expression, onClose }) {
             <div><p className="text-[10px] font-bold text-purple-400 uppercase mb-1">Affectation</p><p className="font-bold text-sm">{expression.affectation}</p></div>
           </div>
           <div className="grid grid-cols-3 gap-6 pb-6 border-b border-gray-100">
-            {/* <div><p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Client</p><p className="font-bold">{expression.client_beneficiaire_nom}</p></div> */}
             <div><p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Navire</p><p className="font-bold">{expression.navire}</p></div>
             <div><p className="text-[10px] font-bold text-gray-400 uppercase mb-1">BL / AWB</p><p className="font-mono text-sm font-bold">{expression.bl_awb}</p></div>
             <div><p className="text-[10px] font-bold text-gray-400 uppercase mb-1">ETA</p><p className="font-bold">{new Date(expression.eta).toLocaleDateString()}</p></div>
           </div>
+          
+          {/* Table épurée de la colonne Montant */}
           <table className="w-full text-sm">
-            <thead><tr className="text-left text-gray-400 uppercase text-[10px] font-bold border-b"><th className="pb-3">Libellé</th><th className="pb-3 text-right">Montant</th></tr></thead>
+            <thead>
+              <tr className="text-left text-gray-400 uppercase text-[10px] font-bold border-b">
+                <th className="pb-3">{t("Désignation des besoins")}</th>
+                <th className="pb-3 text-right">{t("Type")}</th>
+              </tr>
+            </thead>
             <tbody className="divide-y divide-gray-50">
               {expression.items?.map((item, i) => (
-                <tr key={i}><td className="py-3 font-medium">{item.libelle} <span className="text-[10px] text-gray-300 ml-2">({item.type})</span></td><td className="py-3 text-right font-bold">{Number(item.montant).toLocaleString()}</td></tr>
+                <tr key={i}>
+                  <td className="py-3 font-medium text-gray-900">{item.libelle}</td>
+                  <td className="py-3 text-right font-bold text-gray-500 uppercase text-xs">{item.type}</td>
+                </tr>
               ))}
             </tbody>
           </table>
-          <div className="p-6 bg-gray-50 rounded-2xl flex justify-between items-center">
-            <span className="font-bold text-gray-400 uppercase text-xs">Total Global</span>
-            <span className="text-2xl font-bold text-gray-900">{Number(expression.montant_total).toLocaleString()} {expression.devise_display}</span>
-          </div>
         </div>
       </div>
     </div>

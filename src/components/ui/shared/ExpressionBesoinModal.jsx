@@ -30,7 +30,7 @@ function ExpressionBesoinModal({ expression, onClose, onSave }) {
     eta: '',
     tva: false,
     devise: 'MRU',
-    items: [{ type: 'equipement', montant: '', libelle: '' }]
+    items: [{ type: 'equipement', libelle: '' }] // Suppression du champ montant visuel
   });
 
   useEffect(() => {
@@ -46,7 +46,8 @@ function ExpressionBesoinModal({ expression, onClose, onSave }) {
         eta: expression.eta ? expression.eta.split('T')[0] : '',
         tva: expression.tva,
         devise: expression.devise,
-        items: expression.items.map(i => ({ type: i.type, montant: i.montant, libelle: i.libelle }))
+        // On stocke temporairement le montant d'origine pour l'envoi en cas de modification
+        items: expression.items.map(i => ({ type: i.type, libelle: i.libelle, _originalMontant: i.montant }))
       });
     }
   }, [expression]);
@@ -62,7 +63,7 @@ function ExpressionBesoinModal({ expression, onClose, onSave }) {
     }
   };
 
-  const addItem = () => setFormData({ ...formData, items: [...formData.items, { type: 'equipement', montant: '', libelle: '' }] });
+  const addItem = () => setFormData({ ...formData, items: [...formData.items, { type: 'equipement', libelle: '' }] });
   const removeItem = (index) => setFormData({ ...formData, items: formData.items.filter((_, i) => i !== index) });
   const updateItem = (index, field, value) => {
     const newItems = [...formData.items];
@@ -72,14 +73,30 @@ function ExpressionBesoinModal({ expression, onClose, onSave }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // if (!formData.client_beneficiaire_id || !formData.bl_awb || !formData.navire || !formData.eta) {
-    //   return toast.error("Veuillez remplir tous les champs obligatoires");
-    // }
-    onSave(formData);
-  };
 
-  const totalHT = formData.items.reduce((sum, item) => sum + (Number(item.montant) || 0), 0);
-  const totalTTC = formData.tva ? totalHT * 1.16 : totalHT;
+    // Traitement adaptatif des items avant envoi
+    const processedItems = formData.items.map(item => {
+      const baseItem = { type: item.type, libelle: item.libelle };
+      
+      if (expression) {
+        // En cas de modification : si une valeur existait, on la remet, sinon on ne met rien
+        if (item._originalMontant !== undefined && item._originalMontant !== null && item._originalMontant !== '') {
+          baseItem.montant = item._originalMontant;
+        }
+      } else {
+        // En cas d'ajout : on force la valeur à 0
+        baseItem.montant = 0;
+      }
+      return baseItem;
+    });
+
+    const dataToSend = {
+      ...formData,
+      items: processedItems
+    };
+
+    onSave(dataToSend);
+  };
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -102,10 +119,6 @@ function ExpressionBesoinModal({ expression, onClose, onSave }) {
           <div className="bg-inputFieldColor p-4 rounded-xl space-y-4">
             <h3 className="font-bold text-gray-700 uppercase text-xs flex items-center gap-2"><Info className="w-4 h-4" /> Détails logistiques</h3>
             <div className="grid grid-cols-2 gap-4">
-              {/* <select required value={formData.client_beneficiaire_id} onChange={(e) => setFormData({...formData, client_beneficiaire_id: e.target.value})} className="p-3 bg-white border rounded-xl">
-                <option value="">-- Client / Bénéficiaire --</option>
-                {clients.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
-              </select> */}
               <input required type="text" placeholder="BL / AWB" value={formData.bl_awb} onChange={(e) => setFormData({...formData, bl_awb: e.target.value})} className="p-3 bg-white border rounded-xl" />
               <input required type="text" placeholder="Navire" value={formData.navire} onChange={(e) => setFormData({...formData, navire: e.target.value})} className="p-3 bg-white border rounded-xl" />
               <input required type="datetime-local" value={formData.eta} onChange={(e) => setFormData({...formData, eta: e.target.value})} className="p-3 bg-white border rounded-xl" />
@@ -122,18 +135,21 @@ function ExpressionBesoinModal({ expression, onClose, onSave }) {
           <div className="space-y-4">
             <div className="flex justify-between items-center"><h3 className="font-bold text-gray-700 uppercase text-xs">Détails des dépenses</h3><button type="button" onClick={addItem} className="text-buttonGradientSecondary font-bold flex items-center gap-1"><Plus className="w-4 h-4" /> Ajouter ligne</button></div>
             {formData.items.map((item, index) => (
-              <div key={index} className="flex gap-4 items-end">
+              <div key={index} className="flex gap-4 items-end animate-in fade-in-50 duration-150">
                 <input required type="text" value={item.libelle} onChange={(e) => updateItem(index, 'libelle', e.target.value)} placeholder="Libellé" className="flex-1 p-2.5 bg-gray-50 border rounded-lg" />
-                <select value={item.type} onChange={(e) => updateItem(index, 'type', e.target.value)} className="w-40 p-2.5 bg-gray-50 border rounded-lg">{TYPES_FRAIS.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}</select>
-                <input required type="number" value={item.montant} onChange={(e) => updateItem(index, 'montant', e.target.value)} placeholder="0.00" className="w-32 p-2.5 bg-gray-50 border rounded-lg text-right font-bold" />
+                <select value={item.type} onChange={(e) => updateItem(index, 'type', e.target.value)} className="w-48 p-2.5 bg-gray-50 border rounded-lg">{TYPES_FRAIS.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}</select>
                 {formData.items.length > 1 && <button type="button" onClick={() => removeItem(index)} className="p-2.5 text-red-400 hover:text-red-600"><Trash2 className="w-5 h-5" /></button>}
               </div>
             ))}
           </div>
         </form>
 
+        {/* Footer épuré sans calculs de prix */}
         <div className="p-6 border-t bg-buttonGradientSecondary text-white rounded-b-2xl flex justify-between items-center">
-          <div><p className="text-xs font-bold uppercase opacity-80">Montant Total {formData.tva ? 'TTC' : 'HT'}</p><p className="text-3xl font-bold">{totalTTC.toLocaleString()} <span className="text-lg font-light">{formData.devise}</span></p></div>
+          <div>
+            <p className="text-xs font-bold uppercase opacity-80">Expression de besoin</p>
+            <p className="text-sm font-medium opacity-90">Validation séquentielle requise après enregistrement</p>
+          </div>
           <div className="flex gap-3">
             <button onClick={onClose} className="px-6 py-3 bg-white/10 rounded-xl font-bold">Annuler</button>
             <button onClick={handleSubmit} className="px-8 py-3 bg-white text-buttonGradientSecondary rounded-xl font-bold shadow-lg">{expression ? "Mettre à jour" : "Créer l'expression"}</button>
