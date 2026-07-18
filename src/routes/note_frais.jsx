@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { 
   Search, Plus, Receipt, Trash2, Edit3, 
   Download, CheckCircle, XCircle, Filter,
-  User, Ship, FileText, Eye
+  User, Ship, FileText, Eye, Table
 } from 'lucide-react';
 import NoteDeFraisModal from '@/components/ui/shared/noteFraisModal';
 import { getRole } from '@/lib/utils';
@@ -15,7 +15,6 @@ import { generateNoteFraisPdf } from "@/lib/generateNoteFraisPdf";
 function PreviewModal({ note, onClose }) {
   if (!note) return null;
 
-  
   // On récupère les détails de l'EB via le champ imbriqué du serializer
   const eb = note.expression_besoin_detail;
 
@@ -136,7 +135,6 @@ function NotesDeFrais() {
   const fetchNotes = async () => {
     try {
       setLoading(true);
-      // Ici, le backend renvoie maintenant le NoteFraisDetailSerializer
       const response = await api.get("notes-frais/");
       setListe(response.data);
     } catch (error) {
@@ -167,37 +165,35 @@ function NotesDeFrais() {
     }
   };
 
-const handleSave = async (formData) => { 
-  try {
-    // Formatage pour correspondre aux attentes de Django (ForeignKey)
-    const payload = {
-      ...formData,
-      expression_besoin_id: selectedNote.expression_besoin_detail.id, // On mappe l'ID vers la clé attendue
-    };
+  const handleSave = async (formData) => { 
+    try {
+      const payload = {
+        ...formData,
+        expression_besoin_id: selectedNote.expression_besoin_detail.id,
+      };
 
-    if (selectedNote) {
-      console.log("Note : ", selectedNote.expression_besoin_detail.id);
-      console.log("Payload : ", payload);
+      if (selectedNote) {
+        console.log("Note : ", selectedNote.expression_besoin_detail.id);
+        console.log("Payload : ", payload);
 
-      await api.put(`notes-frais/${selectedNote.id}/`, payload);
-      toast.success("Modifications enregistrées");
-    } else {
-      await api.post(`notes-frais/`, payload); 
-      toast.success("Note de frais générée avec succès !");
+        await api.put(`notes-frais/${selectedNote.id}/`, payload);
+        toast.success("Modifications enregistrées");
+      } else {
+        await api.post(`notes-frais/`, payload); 
+        toast.success("Note de frais générée avec succès !");
+      }
+
+      setShowModal(false);
+      fetchNotes();
+    } catch (error) {
+      console.error("Save Error:", error.response?.data || error);
+      
+      const errorMsg = error.response?.data?.expression_besoin?.[0] 
+                       ? "L'Expression de besoin est requise" 
+                       : "Une erreur est survenue lors de l'enregistrement";
+      toast.error(errorMsg);
     }
-
-    setShowModal(false);
-    fetchNotes();
-  } catch (error) {
-    console.error("Save Error:", error.response?.data || error);
-    
-    const errorMsg = error.response?.data?.expression_besoin?.[0] 
-                     ? "L'Expression de besoin est requise" 
-                     : "Une erreur est survenue lors de l'enregistrement";
-    toast.error(errorMsg);
-  }
-};
-
+  };
 
   const handleExportPdf = (note) => {
     if (note.status !== 'valide') {
@@ -213,9 +209,54 @@ const handleSave = async (formData) => {
     }
   };
 
+  // --- NOUVELLE FONCTION EXPORT EXCEL DES DÉPENSES ---
+  const handleExportExcel = (note) => {
+    try {
+      if (!note.items || note.items.length === 0) {
+        toast.error(t("Cette note de frais ne contient aucune dépense à exporter."));
+        return;
+      }
+
+      const eb = note.expression_besoin_detail;
+      
+      // Construction du contenu CSV compatible Excel (Séparateur point-virgule et BOM UTF-8)
+      let csvContent = "\uFEFF"; 
+      csvContent += `NOTE DE FRAIS : ${note.reference}\n`;
+      csvContent += `EB Source : ${eb?.reference || 'N/A'}\n`;
+      csvContent += `Demandeur : ${eb?.nom_demandeur || '---'}\n`;
+      csvContent += `Direction : ${eb?.direction || '---'}\n`;
+      csvContent += `Navire : ${eb?.navire || '---'}\n`;
+      csvContent += `Statut : ${note.status?.toUpperCase()}\n`;
+      csvContent += `Devise : ${note.devise_display || note.devise || ''}\n\n`;
+      
+      // En-têtes du tableau
+      csvContent += "Libellé;Type de dépense;Montant\n";
+      
+      // Remplissage des lignes d'articles
+      note.items.forEach(item => {
+        csvContent += `"${item.libelle.replace(/"/g, '""')}";"${(item.type_display || '').replace(/"/g, '""')}";${item.montant}\n`;
+      });
+      
+      csvContent += `\n;MONTANT TOTAL ;${note.montant_total}\n`;
+
+      // Déclenchement du téléchargement navigateur
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `Note_Frais_${note.reference}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success(t("Données Excel exportées avec succès !"));
+    } catch (error) {
+      toast.error(t("Erreur lors de l'exportation"));
+    }
+  };
+
   const filtered = useMemo(() => {
     return liste.filter(n => {
-        // Recherche étendue sur les données imbriquées de l'EB
       const content = `${n.reference} ${n.expression_besoin_detail?.client_beneficiaire_nom} ${n.expression_besoin_detail?.navire} ${n.expression_besoin_detail?.reference}`.toLowerCase();
       const matchesSearch = content.includes(search.toLowerCase());
       const matchesStatus = statusFilter === "all" || n.status === statusFilter;
@@ -275,6 +316,15 @@ const handleSave = async (formData) => {
                     <button onClick={() => { setSelectedNote(note); setShowPreview(true); }} title={t("Voir Détails")} className="p-2 hover:bg-gray-100 text-gray-500 rounded-lg">
                       <Eye className="w-5 h-5" />
                     </button>
+
+                    {/* BOUTON EXPORT EXCEL DES DETAILS */}
+                    <button 
+                      onClick={() => handleExportExcel(note)} 
+                      className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" 
+                      title={t("Télécharger les détails sur Excel")}
+                    >
+                      <Table className="w-5 h-5" />
+                    </button>
                     
                     {isValide && (
                       <button onClick={() => handleExportPdf(note)} title={t("Télécharger PDF")} className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg"><Download className="w-5 h-5" /></button>
@@ -296,7 +346,6 @@ const handleSave = async (formData) => {
                 </div>
 
                 <div className="space-y-2.5 mb-6">
-                  {/* <div className="flex items-center gap-2 text-sm font-bold text-gray-700"><User className="w-4 h-4 text-gray-400" /> {eb?.client_beneficiaire_nom || "Client inconnu"}</div> */}
                   <div className="flex items-center gap-2 text-sm text-gray-500"><Ship className="w-4 h-4 text-gray-400" /> {eb?.navire || "-"}</div>
                   <div className="flex items-center gap-2 text-sm text-gray-500"><FileText className="w-4 h-4 text-gray-400" /> {eb?.bl_awb || "-"}</div>
                 </div>

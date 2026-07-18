@@ -6,7 +6,7 @@ import {
   Search, Plus, FileCheck, Trash2, Edit3,
   Anchor, User, FileStack, FileText, EyeOff, XCircle, Eye, Ship, 
   Calendar, Box, Weight, Info, CreditCard, CheckCircle2,
-  FileDown, Copy
+  FileDown, Copy, Table
 } from 'lucide-react';
 import FactureModal from '@/components/ui/shared/factureModal';
 import ImportDevisModal from '@/components/ui/shared/importDevisModal';
@@ -175,7 +175,7 @@ function FacturePreviewModal({ facture, onClose }) {
             <div>
               <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Navire / Type</p>
               <p className="font-bold text-sm flex items-center gap-1">
-                <Ship className="w-3 h-3 text-amber-600"/> {f || '---'}
+                <Ship className="w-3 h-3 text-amber-600"/> {facture.vessel || '---'}
               </p>
             </div>
             <div>
@@ -230,7 +230,7 @@ function Factures() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false); 
-  const [showDuplicateModal, setShowDuplicateModal] = useState(false); // NOUVEAU
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false); 
   const [selectedFacture, setSelectedFacture] = useState(null);
 
   const currentRole = getRole();
@@ -271,7 +271,6 @@ function Factures() {
     }
   };
 
-  // EXECUTION DE LA DUPLICATION APRÈS MODAL DE CONFIRMATION
   const handleDuplicate = async (id) => {
     try {
       await api.post(`factures/${id}/dupliquer/`);
@@ -279,7 +278,7 @@ function Factures() {
       setShowDuplicateModal(false);
       fetchData(); 
     } catch (error) {
-      toast.error(t("erreur de duplication")); // Message d'erreur strict
+      toast.error(t("erreur de duplication")); 
     }
   };
 
@@ -328,6 +327,52 @@ function Factures() {
       return;
     }
     generateRecuPDF(facture);
+  };
+
+  // --- NOUVELLE FONCTION EXPORT EXCEL DES DÉTAILS DE FACTURE ---
+  const handleExportExcel = (facture) => {
+    try {
+      if (!facture.items || facture.items.length === 0) {
+        toast.error(t("Cette facture ne contient aucun article à exporter."));
+        return;
+      }
+
+      const clientNom = facture.client?.nom || facture.client_nom || "Inconnu";
+      
+      // Construction du contenu CSV/Excel sécurisé avec BOM UTF-8
+      let csvContent = "\uFEFF"; 
+      csvContent += `FACTURE : ${facture.reference}\n`;
+      csvContent += `Client : ${clientNom}\n`;
+      csvContent += `Navire : ${facture.vessel || '---'}\n`;
+      csvContent += `Port : ${facture.port_arrive || '---'}\n`;
+      csvContent += `Statut : ${facture.status?.toUpperCase()}\n`;
+      csvContent += `Devise : ${facture.devise_display || ''}\n\n`;
+      
+      // En-têtes du tableau
+      csvContent += "Désignation;Quantité;Prix Unitaire;Total HT\n";
+      
+      // Lignes de données
+      facture.items.forEach(item => {
+        const totalLine = item.quantite * item.prix_unitaire;
+        csvContent += `"${item.libelle.replace(/"/g, '""')}";${item.quantite};${item.prix_unitaire};${totalLine}\n`;
+      });
+      
+      csvContent += `\n;;MONTANT TOTAL TTC;${facture.montant_total}\n`;
+
+      // Téléchargement du fichier
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `Facture_${facture.reference}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success(t("Données Excel exportées !"));
+    } catch (error) {
+      toast.error(t("Erreur lors de l'exportation"));
+    }
   };
 
   const filtered = useMemo(() => {
@@ -434,7 +479,15 @@ function Factures() {
                         <Eye className="w-5 h-5" />
                       </button>
 
-                      {/* OUVERTURE DU MODAL DE CONFIRMATION */}
+                      {/* BOUTON EXPORT EXCEL DES DETAILS */}
+                      <button 
+                        onClick={() => handleExportExcel(f)} 
+                        className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" 
+                        title={t("Télécharger les détails sur Excel")}
+                      >
+                        <Table className="w-5 h-5" />
+                      </button>
+
                       <button 
                         onClick={() => { setSelectedFacture(f); setShowDuplicateModal(true); }} 
                         className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
@@ -494,8 +547,6 @@ function Factures() {
       {showImportModal && <ImportDevisModal onClose={() => setShowImportModal(false)} onSuccess={() => { setShowImportModal(false); fetchData(); }} />}
       {showPreview && <FacturePreviewModal facture={selectedFacture} onClose={() => setShowPreview(false)} />}
       {showPaymentModal && <PaymentModal facture={selectedFacture} onClose={() => setShowPaymentModal(false)} onConfirm={handlePay} />}
-      
-      {/* AFFICHAGE DU MODAL DE DUPLICATION SÉCURISÉ */}
       {showDuplicateModal && <DuplicateConfirmationModal facture={selectedFacture} onClose={() => setShowDuplicateModal(false)} onConfirm={handleDuplicate} />}
     </div>
   );

@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { 
   Search, Plus, FileText, Trash2, Edit3, 
   ArrowRightLeft, Anchor, User, FileCheck, XCircle, Eye, Ship, Calendar, Box, Weight, Info,
-  Copy // Ajout de l'icône Copy
+  Copy, Table
 } from 'lucide-react';
 import DevisModal from '@/components/ui/shared/devisModal';
 import { generateDevisPDF } from '@/lib/generateDevisPdf';
@@ -173,7 +173,7 @@ function Devis() {
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
-  const [showDuplicateModal, setShowDuplicateModal] = useState(false); // NOUVEAU
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false); 
   const [selectedDevis, setSelectedDevis] = useState(null);
 
   const currentRole = getRole();
@@ -214,7 +214,6 @@ function Devis() {
     }
   };
 
-  // NOUVELLE LOGIQUE DE DUPLICATION VIA LE MODAL MODERNE
   const handleDuplicate = async (id) => {
     try {
       await api.post(`devis/${id}/dupliquer/`);
@@ -222,7 +221,7 @@ function Devis() {
       setShowDuplicateModal(false);
       fetchData();
     } catch (error) {
-      toast.error(t("erreur de duplication")); // Message d'erreur épuré
+      toast.error(t("erreur de duplication")); 
     }
   };
 
@@ -250,6 +249,53 @@ function Devis() {
       toast.success(t("Devis supprimé"));
       fetchData();
     } catch (error) { toast.error(t("Erreur suppression")); }
+  };
+
+  // --- NOUVELLE FONCTION EXPORT EXCEL DES DÉTAILS DE DEVIS ---
+  const handleExportExcel = (devis) => {
+    try {
+      if (!devis.items || devis.items.length === 0) {
+        toast.error(t("Ce devis ne contient aucun article à exporter."));
+        return;
+      }
+
+      const clientNom = devis.client?.nom || devis.client_nom || "Inconnu";
+      
+      // Construction du contenu CSV compatible Excel (Séparateur point-virgule et BOM UTF-8)
+      let csvContent = "\uFEFF"; 
+      csvContent += `DEVIS : ${devis.reference}\n`;
+      csvContent += `Client : ${clientNom}\n`;
+      csvContent += `Navire : ${devis.vessel || '---'}\n`;
+      csvContent += `Port : ${devis.port_arrive || '---'}\n`;
+      csvContent += `Statut : ${devis.status?.toUpperCase()}\n`;
+      csvContent += `Devise : ${devis.devise_display || ''}\n\n`;
+      
+      // En-têtes 
+      csvContent += "Désignation;Quantité;Prix Unitaire;Total HT\n";
+      
+      // Remplissage du tableau d'éléments
+      devis.items.forEach(item => {
+        const totalLine = item.quantite * item.prix_unitaire;
+        csvContent += `"${item.libelle.replace(/"/g, '""')}";${item.quantite};${item.prix_unitaire};${totalLine}\n`;
+      });
+      
+      csvContent += `\n;;TVA (16%);${devis.tva ? "Inclus" : "Non incluse"}\n`;
+      csvContent += `;;MONTANT TOTAL TTC;${devis.montant_total}\n`;
+
+      // Déclenchement du téléchargement navigateur
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `Devis_${devis.reference}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success(t("Données Excel exportées avec succès !"));
+    } catch (error) {
+      toast.error(t("Erreur lors de l'exportation"));
+    }
   };
 
   const StatusBadge = ({ status }) => {
@@ -342,6 +388,15 @@ function Devis() {
                       <Eye className="w-5 h-5" />
                     </button>
 
+                    {/* BOUTON EXPORT EXCEL DES DETAILS DU DEVIS */}
+                    <button 
+                      onClick={() => handleExportExcel(devis)} 
+                      className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" 
+                      title={t("Télécharger les détails sur Excel")}
+                    >
+                      <Table className="w-5 h-5" />
+                    </button>
+
                     {devis.status === 'attente' && peutGererStatut && (
                       <>
                         <button onClick={() => handleValidate(devis.id, 'valide')} className="p-2 text-green-600 hover:bg-green-50 rounded-lg" title="Valider">
@@ -363,7 +418,6 @@ function Devis() {
                       <FileText className="w-5 h-5" />
                     </button>
 
-                    {/* BOUTON DECLENCHEUR DU MODAL DE DUPLICATION */}
                     <button 
                       onClick={() => { setSelectedDevis(devis); setShowDuplicateModal(true); }} 
                       className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
@@ -393,8 +447,6 @@ function Devis() {
 
       {showModal && <DevisModal devis={selectedDevis} clients={clients} onClose={() => setShowModal(false)} onSave={handleSave} />}
       {showPreview && <DevisPreviewModal devis={selectedDevis} onClose={() => setShowPreview(false)} />}
-      
-      {/* AFFICHAGE DU COMPOSANT DUPLICATE MODAL */}
       {showDuplicateModal && <DuplicateDevisModal devis={selectedDevis} onClose={() => setShowDuplicateModal(false)} onConfirm={handleDuplicate} />}
     </div>
   );
