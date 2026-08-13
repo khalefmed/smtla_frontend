@@ -167,18 +167,21 @@ function NotesDeFrais() {
 
   const handleSave = async (formData) => { 
     try {
-      const payload = {
+
+      if (selectedNote) {
+        const payload = {
         ...formData,
         expression_besoin_id: selectedNote.expression_besoin_detail.id,
       };
-
-      if (selectedNote) {
         console.log("Note : ", selectedNote.expression_besoin_detail.id);
         console.log("Payload : ", payload);
 
         await api.put(`notes-frais/${selectedNote.id}/`, payload);
         toast.success("Modifications enregistrées");
       } else {
+        const payload = {
+        ...formData,
+      };
         await api.post(`notes-frais/`, payload); 
         toast.success("Note de frais générée avec succès !");
       }

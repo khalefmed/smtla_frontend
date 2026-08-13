@@ -86,6 +86,7 @@ function NoteDeFraisModal({ note, onClose, onSave }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!note && !formData.expression_besoin_id) return toast.error("Veuillez sélectionner une EB");
+    console.log("Form Data Submitted:", formData);
     onSave(formData);
   };
 
