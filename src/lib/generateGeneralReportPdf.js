@@ -2,19 +2,53 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import logoImg from '@/assets/logo.png'; 
 
-/**
- * Formatage manuel pour garantir un espace standard comme séparateur de milliers
- * et éviter le bug du caractère "/" sur certains navigateurs.
- */
 const formatNombre = (valeur) => {
   if (valeur === undefined || valeur === null || valeur === '' || isNaN(valeur)) {
-    return valeur; // Retourne la chaîne vide ou le texte tel quel s'il n'est pas numérique
+    return valeur;
   }
   const num = Number(valeur);
   let [entier, decimal] = num.toFixed(2).split('.');
   entier = entier.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-  // On n'affiche les décimales que si elles sont différentes de 00
   return decimal === '00' ? entier : `${entier},${decimal}`;
+};
+
+/**
+ * Compte le nombre exact de rotations (lignes/opérations d'expédition distinctes)
+ * Exemple : "21 CAMION\n43 PIPES" -> compte pour 2 rotations.
+ */
+const calculerTotalRotations = (reportData) => {
+  if (typeof reportData?.total_rotations === 'number' && reportData.total_rotations > 0) {
+    return reportData.total_rotations;
+  }
+
+  const lignes = reportData?.lignes || [];
+  const colonnes = reportData?.colonnes || [];
+  let nombreTotalRotations = 0;
+
+  lignes.forEach(ligne => {
+    if (ligne.clients) {
+      colonnes.forEach(clientKey => {
+        const contenu = ligne.clients[clientKey];
+        if (contenu) {
+          if (typeof contenu === 'number' && contenu > 0) {
+            // Un nombre direct équivaut à 1 rotation/opération
+            nombreTotalRotations += 1;
+          } else if (typeof contenu === 'string') {
+            // Sépare par saut de ligne pour obtenir chaque élément/rotation individuel
+            const elements = contenu.split(/\n|\r/);
+            elements.forEach(item => {
+              // Si la ligne contient du texte non vide (ex: "21 CAMION" ou "43 PIPES")
+              if (item.trim().length > 0) {
+                nombreTotalRotations += 1;
+              }
+            });
+          }
+        }
+      });
+    }
+  });
+
+  return nombreTotalRotations;
 };
 
 export function generateGeneralReportPdf(reportData) {
@@ -66,14 +100,30 @@ export function generateGeneralReportPdf(reportData) {
   doc.setTextColor(textGrey[0], textGrey[1], textGrey[2]);
   doc.text(`NIF: ${reportData.nif || '01328556'}`, 14, 65);
 
+  // --- CALCUL & AFFICHAGE DU NOMBRE TOTAL DE ROTATIONS ---
+  const totalRotationsValeur = calculerTotalRotations(reportData);
+  const totalRotationsFormate = formatNombre(totalRotationsValeur);
+  
+  doc.setFillColor(lightBlue[0], lightBlue[1], lightBlue[2]);
+  doc.setDrawColor(smtlaBlue[0], smtlaBlue[1], smtlaBlue[2]);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(14, 67, 85, 8, 1, 1, 'FD');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(smtlaBlue[0], smtlaBlue[1], smtlaBlue[2]);
+  doc.text(`Nombre total de rotations : ${totalRotationsFormate}`, 18, 72.2);
+
   // --- 2. TABLEAU PROFESSIONNEL ---
   const tableHead = [['DÉSIGNATION', ...reportData.colonnes.map(c => c.toUpperCase())]];
 
   const tableBody = reportData.lignes.map(ligne => {
     return [
       { content: ligne.label, styles: { fontStyle: 'bold', fillColor: lightBlue, textColor: smtlaBlue } },
-      // Application du formatage sur chaque cellule de données
-      ...reportData.colonnes.map(client => formatNombre(ligne.clients[client]) || '')
+      ...reportData.colonnes.map(client => {
+        const val = ligne.clients[client];
+        return typeof val === 'number' ? formatNombre(val) : (val || '');
+      })
     ];
   });
 
@@ -82,7 +132,7 @@ export function generateGeneralReportPdf(reportData) {
     const totalRow = [
       { content: 'TOTAL GLOBAL', styles: { fontStyle: 'bold', fillColor: smtlaBlue, textColor: [255, 255, 255] } },
       ...reportData.colonnes.map(client => ({
-        content: formatNombre(reportData.total.clients[client]) || '0',
+        content: reportData.total.clients[client] || '',
         styles: { fontStyle: 'bold', fillColor: [240, 240, 240] }
       }))
     ];
@@ -90,7 +140,7 @@ export function generateGeneralReportPdf(reportData) {
   }
 
   autoTable(doc, {
-    startY: 70,
+    startY: 78,
     head: tableHead,
     body: tableBody,
     theme: 'grid',
@@ -98,7 +148,7 @@ export function generateGeneralReportPdf(reportData) {
       fontSize: 8, 
       cellPadding: 4, 
       valign: 'middle', 
-      halign: 'center', // Centré pour les rapports de données
+      halign: 'center',
       overflow: 'linebreak',
       lineColor: [220, 220, 220],
       lineWidth: 0.1
@@ -111,7 +161,7 @@ export function generateGeneralReportPdf(reportData) {
       minCellHeight: 12
     },
     columnStyles: {
-      0: { cellWidth: 40, halign: 'left' }, // La désignation reste alignée à gauche
+      0: { cellWidth: 40, halign: 'left' },
     },
     alternateRowStyles: {
       fillColor: [250, 250, 250]
