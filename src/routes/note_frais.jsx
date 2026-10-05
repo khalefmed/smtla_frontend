@@ -298,7 +298,7 @@ function NotesDeFrais() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filtered.map((note) => {
           const isValide = note.status === 'valide';
-          const canEdit = !isValide || isDG;
+          const canEdit = !isValide || isDG || userRole === 'Directeur des Opérations';
           const eb = note.expression_besoin_detail;
 
           return (
@@ -333,7 +333,7 @@ function NotesDeFrais() {
                       <button onClick={() => handleExportPdf(note)} title={t("Télécharger PDF")} className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg"><Download className="w-5 h-5" /></button>
                     )}
 
-                    {(canEdit && isDG) && (
+                    {(canEdit) && (
                       <button onClick={() => { setSelectedNote(note); setShowModal(true); }} title={t("Modifier")} className="p-2 hover:bg-indigo-50 text-indigo-500 rounded-lg"><Edit3 className="w-5 h-5" /></button>
                     )}
 
